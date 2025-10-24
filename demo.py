@@ -5,12 +5,6 @@ This script demonstrates PDF creation without requiring Microsoft email setup
 """
 
 import os
-import sys
-from datetime import datetime
-
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(__file__))
-
 from invoice_generator import InvoiceGenerator, create_sample_invoice_data
 
 

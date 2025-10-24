@@ -32,6 +32,10 @@ env/
 # Generated invoices (comment out if you want to track them)
 invoices/*.pdf
 
+# Docker
+.env.docker
+docker-compose.override.yml
+
 # IDE
 .vscode/
 .idea/

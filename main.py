@@ -7,6 +7,7 @@ and sends them via Microsoft email.
 """
 
 import os
+from pathlib import Path
 import sys
 from datetime import datetime
 from typing import Optional
@@ -103,7 +104,7 @@ def get_invoice_details() -> Optional[dict]:
         subtotal = total_hours * config.HOURLY_RATE
 
         # Display summary
-        print(f"\n📋 Invoice Summary:")
+        print("\n📋 Invoice Summary:")
         print(f"   Client: {client_name}")
         print(f"   Email: {client_email}")
         print(f"   Period: {month_year}")
@@ -114,7 +115,7 @@ def get_invoice_details() -> Optional[dict]:
         print(f"   Total amount: {config.CURRENCY_SYMBOL}{subtotal:.2f}")
 
         # Confirm
-        confirm = input(f"\nProceed with invoice creation? (y/n): ").lower().strip()
+        confirm = input("\nProceed with invoice creation? (y/n): ").lower().strip()
         if confirm not in ["y", "yes"]:
             return None
 
@@ -131,7 +132,7 @@ def get_invoice_details() -> Optional[dict]:
         return None
 
 
-def send_invoice_email(invoice_data: dict, pdf_path: str) -> bool:
+def send_invoice_email(invoice_data: dict, pdf_path: Path) -> bool:
     """
     Send invoice via email
 
@@ -213,10 +214,10 @@ def setup_environment():
         missing_configs.append("MICROSOFT_TENANT_ID")
 
     if missing_configs:
-        print(f"\n⚠️  Missing required Microsoft Graph API configurations:")
+        print("\n⚠️  Missing required Microsoft Graph API configurations:")
         for config_name in missing_configs:
             print(f"   - {config_name}")
-        print(f"\nPlease update the .env file with your Microsoft app credentials.")
+        print("\nPlease update the .env file with your Microsoft app credentials.")
         print("See README.md for setup instructions.")
         return False
 

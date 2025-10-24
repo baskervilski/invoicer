@@ -4,16 +4,15 @@ Microsoft Graph Email Integration
 This module handles sending emails through Microsoft Graph API using OAuth2 authentication.
 """
 
-import json
 import base64
+from pathlib import Path
 import msal
 import requests
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 import webbrowser
 import http.server
 import socketserver
 import urllib.parse
-from threading import Thread
 import time
 
 import config
@@ -140,7 +139,7 @@ class EmailSender:
         to_email: str,
         subject: str,
         body: str,
-        attachment_path: Optional[str] = None,
+        attachment_path: Optional[Path] = None,
     ) -> bool:
         """
         Send an email using Microsoft Graph API
@@ -168,7 +167,7 @@ class EmailSender:
         }
 
         # Add attachment if provided
-        if attachment_path and os.path.exists(attachment_path):
+        if attachment_path and attachment_path.exists():
             attachment = self._prepare_attachment(attachment_path)
             if attachment:
                 message["message"]["attachments"] = [attachment]
@@ -195,7 +194,7 @@ class EmailSender:
             print(f"Error sending email: {e}")
             return False
 
-    def _prepare_attachment(self, file_path: str) -> Optional[Dict]:
+    def _prepare_attachment(self, file_path: Path) -> Optional[Dict]:
         """
         Prepare file attachment for email
 
@@ -284,7 +283,3 @@ class EmailSender:
         </body>
         </html>
         """
-
-
-# Import os here to avoid circular imports
-import os

@@ -4,16 +4,16 @@ PDF Invoice Generator
 This module handles the creation of professional PDF invoices using ReportLab.
 """
 
-import os
-from datetime import datetime, date
-from typing import Dict, List, Optional, Tuple
-from reportlab.lib.pagesizes import letter, A4
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List
+from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.platypus.flowables import HRFlowable
-from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER
+from reportlab.lib.enums import TA_RIGHT, TA_LEFT
 
 import config
 
@@ -71,7 +71,7 @@ class InvoiceGenerator:
             )
         )
 
-    def create_invoice(self, invoice_data: Dict) -> str:
+    def create_invoice(self, invoice_data: Dict) -> Path:
         """
         Create a PDF invoice and return the file path
 
@@ -85,11 +85,11 @@ class InvoiceGenerator:
         invoice_number = invoice_data.get("invoice_number", "INV-001")
         client_name = invoice_data.get("client_name", "Client").replace(" ", "_")
         filename = f"Invoice_{invoice_number}_{client_name}.pdf"
-        filepath = os.path.join(config.INVOICES_DIR, filename)
+        filepath = Path(config.INVOICES_DIR) / filename
 
         # Create the PDF document
         doc = SimpleDocTemplate(
-            filepath,
+            str(filepath),
             pagesize=self.page_size,
             rightMargin=72,
             leftMargin=72,

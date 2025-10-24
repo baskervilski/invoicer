@@ -5,11 +5,6 @@ Test script for invoice generation without email functionality
 
 import os
 import sys
-from datetime import datetime
-
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(__file__))
-
 from invoice_generator import InvoiceGenerator, create_sample_invoice_data
 
 
@@ -26,7 +21,7 @@ def test_pdf_generation():
             month_year="October 2024",
         )
 
-        print(f"📋 Test Invoice Data:")
+        print("📋 Test Invoice Data:")
         print(f"   Client: {invoice_data['client_info']['name']}")
         print(f"   Days worked: {invoice_data['days_worked']}")
         print(f"   Invoice number: {invoice_data['invoice_number']}")
@@ -37,7 +32,7 @@ def test_pdf_generation():
 
         if os.path.exists(pdf_path):
             file_size = os.path.getsize(pdf_path)
-            print(f"✅ PDF generated successfully!")
+            print("✅ PDF generated successfully!")
             print(f"   File: {pdf_path}")
             print(f"   Size: {file_size} bytes")
             return True

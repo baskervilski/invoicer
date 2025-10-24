@@ -17,17 +17,51 @@ A professional Python application that creates PDF invoices based on days worked
 - Microsoft 365 account (for sending emails)
 - Microsoft App Registration (for email API access)
 
-## Installation
+## Quick Start
+
+### Using Make (Recommended)
+
+The easiest way to get started is using the provided Makefile:
+
+```bash
+# Complete setup (installs UV, dependencies, creates config)
+make setup
+
+# Try the demo (no configuration needed)
+make demo
+
+# Run the full application
+make run
+```
+
+### Manual Installation
 
 1. **Clone or download this project**
    ```bash
    cd /home/nemanja/projects/personal/invoicer
    ```
 
-2. **Install dependencies**
+2. **Install UV package manager** (recommended)
    ```bash
-   pip install -e .
+   make install-uv
+   # or manually: curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
+
+3. **Install dependencies**
+   ```bash
+   make install
+   # or with pip: pip install -e .
+   ```
+
+## Available Make Commands
+
+Run `make help` to see all available commands:
+
+- **Environment Setup**: `make setup`, `make install`, `make install-uv`
+- **Development**: `make run`, `make demo`, `make test`
+- **Code Quality**: `make lint`, `make format`, `make typecheck`
+- **Configuration**: `make check-env`, `make show-config`, `make init-env`
+- **Maintenance**: `make clean`, `make update`
 
 ## Microsoft App Registration Setup
 
@@ -79,8 +113,22 @@ To send emails via Microsoft Graph API, you need to register an application:
 
 ### Running the Application
 
+**Using Make (Recommended):**
+```bash
+make run
+```
+
+**Direct Python:**
 ```bash
 python main.py
+# or with UV: uv run python main.py
+```
+
+### Quick Demo
+
+To test without any configuration:
+```bash
+make demo
 ```
 
 ### Interactive Process
