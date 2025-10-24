@@ -1,0 +1,383 @@
+"""
+PDF Invoice Generator
+
+This module handles the creation of professional PDF invoices using ReportLab.
+"""
+
+import os
+from datetime import datetime, date
+from typing import Dict, List, Optional, Tuple
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus.flowables import HRFlowable
+from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER
+
+import config
+
+
+class InvoiceGenerator:
+    def __init__(self, page_size=A4):
+        self.page_size = page_size
+        self.styles = getSampleStyleSheet()
+        self._setup_custom_styles()
+
+    def _setup_custom_styles(self):
+        """Setup custom paragraph styles for the invoice"""
+        # Company header style
+        self.styles.add(
+            ParagraphStyle(
+                name="CompanyHeader",
+                parent=self.styles["Heading1"],
+                fontSize=24,
+                spaceAfter=12,
+                textColor=colors.HexColor("#2E86AB"),
+                alignment=TA_LEFT,
+            )
+        )
+
+        # Invoice title style
+        self.styles.add(
+            ParagraphStyle(
+                name="InvoiceTitle",
+                parent=self.styles["Heading1"],
+                fontSize=28,
+                spaceAfter=20,
+                textColor=colors.HexColor("#A23B72"),
+                alignment=TA_RIGHT,
+            )
+        )
+
+        # Address style
+        self.styles.add(
+            ParagraphStyle(
+                name="Address",
+                parent=self.styles["Normal"],
+                fontSize=10,
+                spaceAfter=6,
+                alignment=TA_LEFT,
+            )
+        )
+
+        # Right aligned text style
+        self.styles.add(
+            ParagraphStyle(
+                name="RightAlign",
+                parent=self.styles["Normal"],
+                fontSize=10,
+                alignment=TA_RIGHT,
+            )
+        )
+
+    def create_invoice(self, invoice_data: Dict) -> str:
+        """
+        Create a PDF invoice and return the file path
+
+        Args:
+            invoice_data: Dictionary containing invoice information
+
+        Returns:
+            str: Path to the generated PDF file
+        """
+        # Generate filename
+        invoice_number = invoice_data.get("invoice_number", "INV-001")
+        client_name = invoice_data.get("client_name", "Client").replace(" ", "_")
+        filename = f"Invoice_{invoice_number}_{client_name}.pdf"
+        filepath = os.path.join(config.INVOICES_DIR, filename)
+
+        # Create the PDF document
+        doc = SimpleDocTemplate(
+            filepath,
+            pagesize=self.page_size,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=18,
+        )
+
+        # Build the invoice content
+        story = []
+        story.extend(self._build_header(invoice_data))
+        story.append(Spacer(1, 20))
+        story.extend(self._build_invoice_details(invoice_data))
+        story.append(Spacer(1, 20))
+        story.extend(self._build_line_items(invoice_data))
+        story.append(Spacer(1, 20))
+        story.extend(self._build_totals(invoice_data))
+        story.append(Spacer(1, 30))
+        story.extend(self._build_footer(invoice_data))
+
+        # Generate the PDF
+        doc.build(story)
+
+        return filepath
+
+    def _build_header(self, invoice_data: Dict) -> List:
+        """Build the invoice header with company info and invoice title"""
+        elements = []
+
+        # Create a table for header layout
+        header_data = [
+            [
+                Paragraph(config.COMPANY_NAME, self.styles["CompanyHeader"]),
+                Paragraph("INVOICE", self.styles["InvoiceTitle"]),
+            ],
+            [
+                Paragraph(
+                    config.COMPANY_ADDRESS.replace("\n", "<br/>"),
+                    self.styles["Address"],
+                ),
+                Paragraph(
+                    f"Invoice #: {invoice_data.get('invoice_number', 'INV-001')}<br/>"
+                    f"Date: {invoice_data.get('invoice_date', datetime.now().strftime('%B %d, %Y'))}<br/>"
+                    f"Due Date: {invoice_data.get('due_date', 'Upon Receipt')}",
+                    self.styles["RightAlign"],
+                ),
+            ],
+        ]
+
+        header_table = Table(header_data, colWidths=[3.5 * inch, 3 * inch])
+        header_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
+
+        elements.append(header_table)
+        elements.append(
+            HRFlowable(width="100%", thickness=2, color=colors.HexColor("#2E86AB"))
+        )
+
+        return elements
+
+    def _build_invoice_details(self, invoice_data: Dict) -> List:
+        """Build the bill to and invoice details section"""
+        elements = []
+
+        # Bill To section
+        bill_to = invoice_data.get("client_info", {})
+        client_address = bill_to.get("address", "Client Address\nCity, State ZIP")
+
+        details_data = [
+            [Paragraph("<b>Bill To:</b>", self.styles["Normal"]), ""],
+            [
+                Paragraph(
+                    f"{bill_to.get('name', 'Client Name')}<br/>"
+                    f"{client_address.replace(chr(10), '<br/>')}<br/>"
+                    f"Email: {bill_to.get('email', 'client@example.com')}",
+                    self.styles["Address"],
+                ),
+                "",
+            ],
+        ]
+
+        details_table = Table(details_data, colWidths=[4 * inch, 2.5 * inch])
+        details_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
+
+        elements.append(details_table)
+
+        return elements
+
+    def _build_line_items(self, invoice_data: Dict) -> List:
+        """Build the line items table"""
+        elements = []
+
+        # Calculate values
+        days_worked = invoice_data.get("days_worked", 0)
+        hours_per_day = config.HOURS_PER_DAY
+        hourly_rate = config.HOURLY_RATE
+        total_hours = days_worked * hours_per_day
+        subtotal = total_hours * hourly_rate
+
+        # Project description
+        project_description = invoice_data.get(
+            "project_description",
+            f"Consulting services for {invoice_data.get('period', 'this month')}",
+        )
+
+        # Table headers
+        line_items_data = [
+            ["Description", "Days", "Hours/Day", "Rate/Hour", "Total Hours", "Amount"]
+        ]
+
+        # Line item
+        line_items_data.append(
+            [
+                project_description,
+                str(days_worked),
+                f"{hours_per_day:.1f}",
+                f"{config.CURRENCY_SYMBOL}{hourly_rate:.2f}",
+                f"{total_hours:.1f}",
+                f"{config.CURRENCY_SYMBOL}{subtotal:.2f}",
+            ]
+        )
+
+        # Create table
+        line_items_table = Table(
+            line_items_data,
+            colWidths=[
+                2.5 * inch,
+                0.6 * inch,
+                0.8 * inch,
+                0.8 * inch,
+                0.8 * inch,
+                1 * inch,
+            ],
+        )
+
+        # Style the table
+        line_items_table.setStyle(
+            TableStyle(
+                [
+                    # Header row
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2E86AB")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    # Data rows
+                    ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+                    ("ALIGN", (0, 1), (0, -1), "LEFT"),
+                    ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 1), (-1, -1), 9),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#F8F9FA")],
+                    ),
+                ]
+            )
+        )
+
+        elements.append(line_items_table)
+
+        return elements
+
+    def _build_totals(self, invoice_data: Dict) -> List:
+        """Build the totals section"""
+        elements = []
+
+        # Calculate totals
+        days_worked = invoice_data.get("days_worked", 0)
+        total_hours = days_worked * config.HOURS_PER_DAY
+        subtotal = total_hours * config.HOURLY_RATE
+        tax_rate = invoice_data.get("tax_rate", 0.0)
+        tax_amount = subtotal * tax_rate
+        total_amount = subtotal + tax_amount
+
+        # Build totals table
+        totals_data = [["", "Subtotal:", f"{config.CURRENCY_SYMBOL}{subtotal:.2f}"]]
+
+        if tax_rate > 0:
+            totals_data.append(
+                [
+                    "",
+                    f"Tax ({tax_rate * 100:.1f}%):",
+                    f"{config.CURRENCY_SYMBOL}{tax_amount:.2f}",
+                ]
+            )
+
+        totals_data.append(
+            ["", "Total Amount Due:", f"{config.CURRENCY_SYMBOL}{total_amount:.2f}"]
+        )
+
+        totals_table = Table(totals_data, colWidths=[4 * inch, 1.5 * inch, 1 * inch])
+        totals_table.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+                    ("FONTNAME", (1, 0), (-1, -2), "Helvetica-Bold"),
+                    ("FONTNAME", (1, -1), (-1, -1), "Helvetica-Bold"),
+                    ("FONTSIZE", (1, -1), (-1, -1), 12),
+                    ("TEXTCOLOR", (1, -1), (-1, -1), colors.HexColor("#A23B72")),
+                    ("LINEBELOW", (1, -1), (-1, -1), 2, colors.HexColor("#A23B72")),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
+
+        elements.append(totals_table)
+
+        return elements
+
+    def _build_footer(self, invoice_data: Dict) -> List:
+        """Build the invoice footer with payment terms and contact info"""
+        elements = []
+
+        # Payment terms
+        payment_terms = invoice_data.get(
+            "payment_terms",
+            "Payment is due within 30 days of invoice date. "
+            "Late payments may incur additional charges.",
+        )
+
+        elements.append(Paragraph("<b>Payment Terms:</b>", self.styles["Normal"]))
+        elements.append(Paragraph(payment_terms, self.styles["Normal"]))
+        elements.append(Spacer(1, 20))
+
+        # Thank you note
+        thank_you = invoice_data.get(
+            "thank_you_note",
+            "Thank you for your business! For questions about this invoice, "
+            f"please contact us at {config.COMPANY_EMAIL} or {config.COMPANY_PHONE}.",
+        )
+
+        elements.append(Paragraph(thank_you, self.styles["Normal"]))
+
+        return elements
+
+
+def create_sample_invoice_data(
+    client_name: str, client_email: str, days_worked: int, month_year: str | None = None
+) -> Dict:
+    """
+    Create sample invoice data for testing
+
+    Args:
+        client_name: Name of the client
+        client_email: Client's email address
+        days_worked: Number of days worked
+        month_year: Month and year for the invoice (e.g., "October 2024")
+
+    Returns:
+        Dict: Invoice data dictionary
+    """
+    if not month_year:
+        month_year = datetime.now().strftime("%B %Y")
+
+    # Generate invoice number based on current date
+    invoice_number = f"INV-{datetime.now().strftime('%Y%m')}-{client_name[:3].upper()}"
+
+    return {
+        "invoice_number": invoice_number,
+        "invoice_date": datetime.now().strftime("%B %d, %Y"),
+        "due_date": "Net 30 days",
+        "client_info": {
+            "name": client_name,
+            "email": client_email,
+            "address": "Client Company\n123 Business Ave\nCity, State 12345",
+        },
+        "days_worked": days_worked,
+        "project_description": f"Consulting services for {month_year}",
+        "period": month_year,
+        "tax_rate": 0.0,  # Set to 0.08 for 8% tax, etc.
+        "payment_terms": "Payment is due within 30 days of invoice date. Late payments may incur a 1.5% monthly service charge.",
+        "thank_you_note": f"Thank you for your business! For questions about this invoice, please contact us at {config.COMPANY_EMAIL}.",
+    }
