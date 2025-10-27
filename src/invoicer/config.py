@@ -33,7 +33,9 @@ SCOPES = [
 # Directories
 INVOICES_DIR = Path(__file__).parent / "invoices"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
+CLIENTS_DIR = Path(__file__).parent / "clients"
 
 # Create directories if they don't exist
 INVOICES_DIR.mkdir(exist_ok=True)
 TEMPLATES_DIR.mkdir(exist_ok=True)
+CLIENTS_DIR.mkdir(exist_ok=True)

@@ -9,10 +9,11 @@ and sends them via Microsoft email.
 from pathlib import Path
 import sys
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 
 from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
 from .email_sender import EmailSender
+from .client_manager import ClientManager, create_sample_clients
 from . import config
 
 
@@ -35,6 +36,11 @@ def main():
         pdf_path = generator.create_invoice(invoice_data)
         print(f"✅ Invoice created: {pdf_path}")
 
+        # Record invoice creation in client database
+        if invoice_data.get("client_id"):
+            client_manager = ClientManager()
+            client_manager.record_invoice(invoice_data["client_id"], invoice_data)
+
         # Ask if user wants to send email
         send_email = input("\n📧 Send this invoice via email? (y/n): ").lower().strip()
 
@@ -51,6 +57,181 @@ def main():
         sys.exit(1)
 
 
+def select_or_create_client() -> Optional[Dict]:
+    """
+    Allow user to select existing client or create new one
+
+    Returns:
+        Optional[Dict]: Client data or None if cancelled
+    """
+    client_manager = ClientManager()
+
+    # Check if we have existing clients
+    existing_clients = client_manager.list_clients()
+
+    if not existing_clients:
+        print("📝 No existing clients found. Let's create your first client!")
+        return create_new_client(client_manager)
+
+    # Show options
+    print("\n👥 Client Selection")
+    print("=" * 50)
+    print("Choose an option:")
+    print("1. Select from existing clients")
+    print("2. Create new client")
+    print("3. Search clients")
+
+    while True:
+        choice = input("\nEnter your choice (1-3): ").strip()
+
+        if choice == "1":
+            return select_existing_client(client_manager)
+        elif choice == "2":
+            return create_new_client(client_manager)
+        elif choice == "3":
+            return search_and_select_client(client_manager)
+        else:
+            print("Invalid choice. Please enter 1, 2, or 3.")
+
+
+def select_existing_client(client_manager: ClientManager) -> Optional[Dict]:
+    """Select from existing clients"""
+    clients = client_manager.list_clients()
+
+    print(f"\n📋 Existing Clients ({len(clients)} found):")
+    print("=" * 50)
+
+    for i, client in enumerate(clients, 1):
+        last_invoice = client.get("last_invoice_date")
+        if last_invoice:
+            last_invoice_str = datetime.fromisoformat(last_invoice).strftime("%Y-%m-%d")
+        else:
+            last_invoice_str = "Never"
+
+        print(f"{i:2d}. {client['name']}")
+        print(f"     Email: {client['email']}")
+        print(f"     Company: {client.get('company', 'N/A')}")
+        print(f"     Last Invoice: {last_invoice_str}")
+        print(f"     Total Invoices: {client.get('total_invoices', 0)}")
+        print()
+
+    while True:
+        try:
+            choice = input(
+                f"Select client (1-{len(clients)}) or 'b' to go back: "
+            ).strip()
+
+            if choice.lower() == "b":
+                return select_or_create_client()
+
+            client_index = int(choice) - 1
+            if 0 <= client_index < len(clients):
+                selected_client = clients[client_index]
+                # Get full client data
+                full_client_data = client_manager.get_client(selected_client["id"])
+                print(f"\n✅ Selected: {selected_client['name']}")
+                return full_client_data
+            else:
+                print("Invalid selection. Please try again.")
+
+        except ValueError:
+            print("Please enter a valid number or 'b' to go back.")
+
+
+def search_and_select_client(client_manager: ClientManager) -> Optional[Dict]:
+    """Search and select client"""
+    query = input("🔍 Enter search term (name, email, or company): ").strip()
+    if not query:
+        return select_or_create_client()
+
+    results = client_manager.search_clients(query)
+
+    if not results:
+        print(f"No clients found matching '{query}'")
+        retry = input("Try another search? (y/n): ").strip().lower()
+        if retry == "y":
+            return search_and_select_client(client_manager)
+        else:
+            return select_or_create_client()
+
+    print(f"\n🔍 Search Results for '{query}' ({len(results)} found):")
+    print("=" * 50)
+
+    for i, client in enumerate(results, 1):
+        print(f"{i:2d}. {client['name']} ({client['email']})")
+        if client.get("company") != client["name"]:
+            print(f"     Company: {client.get('company', 'N/A')}")
+
+    while True:
+        try:
+            choice = input(
+                f"\nSelect client (1-{len(results)}) or 'b' to go back: "
+            ).strip()
+
+            if choice.lower() == "b":
+                return select_or_create_client()
+
+            client_index = int(choice) - 1
+            if 0 <= client_index < len(results):
+                selected_client = results[client_index]
+                full_client_data = client_manager.get_client(selected_client["id"])
+                print(f"\n✅ Selected: {selected_client['name']}")
+                return full_client_data
+            else:
+                print("Invalid selection. Please try again.")
+
+        except ValueError:
+            print("Please enter a valid number or 'b' to go back.")
+
+
+def create_new_client(client_manager: ClientManager) -> Optional[Dict]:
+    """Create a new client"""
+    print("\n📝 Create New Client")
+    print("=" * 50)
+
+    try:
+        # Required fields
+        name = input("Client/Company name: ").strip()
+        if not name:
+            print("Client name is required.")
+            return None
+
+        email = input("Email address: ").strip()
+        if not email:
+            print("Email address is required.")
+            return None
+
+        # Optional fields
+        company = input(f"Company name (default: {name}): ").strip()
+        if not company:
+            company = name
+
+        address = input("Address (optional): ").strip()
+        phone = input("Phone (optional): ").strip()
+        notes = input("Notes (optional): ").strip()
+
+        # Create client data
+        client_data = {
+            "name": name,
+            "email": email,
+            "company": company,
+            "address": address,
+            "phone": phone,
+            "notes": notes,
+        }
+
+        # Save client
+        client_id = client_manager.add_client(client_data)
+        full_client_data = client_manager.get_client(client_id)
+
+        print(f"\n✅ Client '{name}' created successfully!")
+        return full_client_data
+
+    except Exception as e:
+        print(f"Error creating client: {e}")
+        return None
+
+
 def get_invoice_details() -> Optional[dict]:
     """
     Get invoice details from user input
@@ -59,18 +240,13 @@ def get_invoice_details() -> Optional[dict]:
         Optional[dict]: Invoice data or None if cancelled
     """
     try:
-        print("Please provide the following information:")
-
-        # Client information
-        client_name = input("Client name: ").strip()
-        if not client_name:
-            print("Client name is required.")
+        # First, select or create client
+        client_data = select_or_create_client()
+        if not client_data:
             return None
 
-        client_email = input("Client email: ").strip()
-        if not client_email:
-            print("Client email is required.")
-            return None
+        print(f"\n📋 Creating invoice for: {client_data['name']}")
+        print("=" * 50)
 
         # Days worked
         while True:
@@ -104,8 +280,8 @@ def get_invoice_details() -> Optional[dict]:
 
         # Display summary
         print("\n📋 Invoice Summary:")
-        print(f"   Client: {client_name}")
-        print(f"   Email: {client_email}")
+        print(f"   Client: {client_data['name']}")
+        print(f"   Email: {client_data['email']}")
         print(f"   Period: {month_year}")
         print(f"   Days worked: {days_worked}")
         print(f"   Hours per day: {config.HOURS_PER_DAY}")
@@ -120,9 +296,13 @@ def get_invoice_details() -> Optional[dict]:
 
         # Create invoice data
         invoice_data = create_sample_invoice_data(
-            client_name, client_email, days_worked, month_year
+            client_data["name"], client_data["email"], days_worked, month_year
         )
         invoice_data["project_description"] = project_description
+
+        # Store client data and days worked for later use
+        invoice_data["client_id"] = client_data.get("id")
+        invoice_data["days_worked"] = days_worked
 
         return invoice_data
 
@@ -219,6 +399,14 @@ def setup_environment():
         print("\nPlease update the .env file with your Microsoft app credentials.")
         print("See README.md for setup instructions.")
         return False
+
+    # Initialize client database with sample clients if empty
+    client_manager = ClientManager()
+    existing_clients = client_manager.list_clients()
+    if not existing_clients:
+        print("📝 Setting up sample clients...")
+        create_sample_clients(client_manager)
+        print("✅ Sample clients created!")
 
     print("✅ Environment setup complete!")
     return True
