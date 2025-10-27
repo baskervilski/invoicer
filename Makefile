@@ -87,13 +87,11 @@ init-env:
 
 # Run the main application
 run: check-uv
-	@echo "🚀 Starting Invoice Generator..."
-	uv run python main.py
+	uv run invoicer run
 
 # Run demo with sample invoices
 demo: check-uv
-	@echo "🎭 Running invoice generation demo..."
-	uv run python -m invoicer.main
+	uv run invoicer demo
 
 # Run tests
 test: check-uv
@@ -152,8 +150,7 @@ check-env:
 
 # Show current configuration
 show-config: check-uv
-	@echo "📋 Current configuration:"
-	@uv run python -c "import config; print(f'Company: {config.COMPANY_NAME}'); print(f'Hourly Rate: {config.CURRENCY_SYMBOL}{config.HOURLY_RATE}'); print(f'Hours/Day: {config.HOURS_PER_DAY}'); print(f'Email: {config.COMPANY_EMAIL}')" 2>/dev/null || echo "⚠️  Could not load configuration. Check .env file."
+	uv run invoicer config
 
 # Clean generated files
 clean:
@@ -202,15 +199,8 @@ build: check-uv
 	@echo "✅ Package built successfully"
 
 # Show project status
-status:
-	@echo "📊 Invoice Generator Status"
-	@echo "=========================="
-	@echo "Python version: $(shell python --version 2>/dev/null || echo 'Not found')"
-	@echo "UV version: $(shell uv --version 2>/dev/null || echo 'Not installed')"
-	@echo "Virtual env: $(shell [ -d .venv ] && echo 'Present' || echo 'Missing')"
-	@echo "Config file: $(shell [ -f .env ] && echo 'Present' || echo 'Missing')"
-	@echo "Generated invoices: $(shell ls invoices/*.pdf 2>/dev/null | wc -l) files"
-	@echo ""
+status: check-uv
+	uv run invoicer status
 
 # Development workflow - run all checks
 check-all: lint typecheck test
@@ -237,31 +227,24 @@ quickstart:
 
 # Generate sample invoices for different scenarios
 samples: check-uv
-	@echo "📄 Generating sample invoices for different scenarios..."
-	uv run python generate_samples.py
+	uv run invoicer samples
 
 # Client Management Commands (using Typer CLI)
 clients: check-uv
-	@echo "👥 Client Management CLI"
-	@echo "======================="
-	uv run python -m invoicer.client_cli --help
+	uv run invoicer client --help
 
 client-list: check-uv
-	@echo "📋 Listing all clients..."
-	uv run python -m invoicer.client_cli list
+	uv run invoicer client list
 
 client-add: check-uv
-	@echo "📝 Adding new client..."
-	uv run python -m invoicer.client_cli add
+	uv run invoicer client add
 
 client-init: check-uv
-	@echo "📝 Creating sample clients..."
-	uv run python -m invoicer.client_cli init-samples
+	uv run invoicer client init-samples
 
 client-search: check-uv
-	@echo "🔍 Search clients (usage: make client-search QUERY='search term')..."
 	@if [ -z "$(QUERY)" ]; then \
 		echo "❌ Please provide a search query: make client-search QUERY='search term'"; \
 	else \
-		uv run python -m invoicer.client_cli search "$(QUERY)"; \
+		uv run invoicer client search "$(QUERY)"; \
 	fi

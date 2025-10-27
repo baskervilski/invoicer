@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Invoicer CLI wrapper script
+# This script allows running 'invoicer' commands directly without 'uv run'
+
+# Get the invoicer project directory (parent of bin/)
+INVOICER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Save current directory
+CURRENT_DIR="$(pwd)"
+
+# Run the invoicer CLI with UV from the invoicer project directory
+# but preserve the current working directory for data files
+cd "$INVOICER_DIR" && INVOICER_CWD="$CURRENT_DIR" uv run invoicer "$@"

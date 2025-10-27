@@ -19,12 +19,28 @@ A professional Python application that creates PDF invoices based on days worked
 
 ## Quick Start
 
-### Using Make (Recommended)
+### Using the CLI (Recommended)
 
-The easiest way to get started is using the provided Makefile:
+The easiest way to get started is using the direct CLI commands:
 
 ```bash
 # Complete setup (installs UV, dependencies, creates config)
+make setup
+
+# Initialize workspace and try the demo
+uv run invoicer init
+uv run invoicer demo
+
+# Run the full application
+uv run invoicer run
+```
+
+### Using Make (Alternative)
+
+You can also use the provided Makefile:
+
+```bash
+# Complete setup (installs UV, dependencies, creates config)  
 make setup
 
 # Try the demo (no configuration needed)
