@@ -5,64 +5,20 @@ Client Management CLI Tool
 This tool allows you to manage client data from the command line.
 """
 
-import sys
-from .client_manager import ClientManager, create_sample_clients
+import typer
+from .client_manager import ClientManager
+
+app = typer.Typer(
+    name="client-cli",
+    help="Client Management CLI Tool - Manage client data from the command line",
+    no_args_is_help=True,
+)
 
 
-def main():
-    """Main CLI function"""
-    if len(sys.argv) < 2:
-        show_help()
-        return
-
-    command = sys.argv[1].lower()
-    client_manager = ClientManager()
-
-    if command == "list":
-        list_clients(client_manager)
-    elif command == "add":
-        add_client_interactive(client_manager)
-    elif command == "search":
-        if len(sys.argv) < 3:
-            print("Usage: python -m invoicer.client_cli search <query>")
-            return
-        search_clients(client_manager, " ".join(sys.argv[2:]))
-    elif command == "show":
-        if len(sys.argv) < 3:
-            print("Usage: python -m invoicer.client_cli show <client_id>")
-            return
-        show_client(client_manager, sys.argv[2])
-    elif command == "delete":
-        if len(sys.argv) < 3:
-            print("Usage: python -m invoicer.client_cli delete <client_id>")
-            return
-        delete_client(client_manager, sys.argv[2])
-    elif command == "init-samples":
-        create_sample_clients(client_manager)
-        print("✅ Sample clients created!")
-    else:
-        show_help()
-
-
-def show_help():
-    """Show help information"""
-    print("Client Management CLI")
-    print("====================")
-    print("")
-    print("Usage: python -m invoicer.client_cli <command> [args]")
-    print("")
-    print("Commands:")
-    print("  list           List all clients")
-    print("  add            Add a new client (interactive)")
-    print("  search <query> Search clients by name, email, or company")
-    print("  show <id>      Show detailed client information")
-    print("  delete <id>    Delete a client")
-    print("  init-samples   Create sample clients for testing")
-    print("")
-
-
-def list_clients(client_manager: ClientManager):
+@app.command("list")
+def list_clients():
     """List all clients"""
+    client_manager = ClientManager()
     clients = client_manager.list_clients()
 
     if not clients:
@@ -81,8 +37,10 @@ def list_clients(client_manager: ClientManager):
         print("-" * 50)
 
 
-def add_client_interactive(client_manager: ClientManager):
-    """Add client interactively"""
+@app.command()
+def add():
+    """Add a new client (interactive)"""
+    client_manager = ClientManager()
     print("\n📝 Add New Client")
     print("=" * 30)
 
@@ -121,8 +79,10 @@ def add_client_interactive(client_manager: ClientManager):
         print(f"Error creating client: {e}")
 
 
-def search_clients(client_manager: ClientManager, query: str):
-    """Search clients"""
+@app.command()
+def search(query: str):
+    """Search clients by name, email, or company"""
+    client_manager = ClientManager()
     results = client_manager.search_clients(query)
 
     if not results:
@@ -140,8 +100,10 @@ def search_clients(client_manager: ClientManager, query: str):
         print("-" * 40)
 
 
-def show_client(client_manager: ClientManager, client_id: str):
+@app.command()
+def show(client_id: str):
     """Show detailed client information"""
+    client_manager = ClientManager()
     client = client_manager.get_client(client_id)
 
     if not client:
@@ -163,8 +125,10 @@ def show_client(client_manager: ClientManager, client_id: str):
     print(f"Total Amount: ${client.get('total_amount', 0.0):.2f}")
 
 
-def delete_client(client_manager: ClientManager, client_id: str):
+@app.command()
+def delete(client_id: str):
     """Delete a client"""
+    client_manager = ClientManager()
     client = client_manager.get_client(client_id)
 
     if not client:
@@ -185,5 +149,15 @@ def delete_client(client_manager: ClientManager, client_id: str):
         print("Deletion cancelled.")
 
 
+@app.command("init-samples")
+def init_samples():
+    """Create sample clients for testing"""
+    from .client_manager import create_sample_clients
+
+    client_manager = ClientManager()
+    create_sample_clients(client_manager)
+    print("✅ Sample clients created!")
+
+
 if __name__ == "__main__":
-    main()
+    app()

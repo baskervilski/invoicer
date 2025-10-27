@@ -21,6 +21,12 @@ help:
 	@echo "  lint          Run code linting with ruff"
 	@echo "  format        Format code with ruff"
 	@echo ""
+	@echo "Client Management:"
+	@echo "  clients       Show client management help"
+	@echo "  client-list   List all clients"
+	@echo "  client-add    Add a new client (interactive)"
+	@echo "  client-init   Create sample clients"
+	@echo ""
 	@echo "Configuration:"
 	@echo "  check-env     Check environment configuration"
 	@echo "  show-config   Show current configuration values"
@@ -233,3 +239,29 @@ quickstart:
 samples: check-uv
 	@echo "📄 Generating sample invoices for different scenarios..."
 	uv run python generate_samples.py
+
+# Client Management Commands (using Typer CLI)
+clients: check-uv
+	@echo "👥 Client Management CLI"
+	@echo "======================="
+	uv run python -m invoicer.client_cli --help
+
+client-list: check-uv
+	@echo "📋 Listing all clients..."
+	uv run python -m invoicer.client_cli list
+
+client-add: check-uv
+	@echo "📝 Adding new client..."
+	uv run python -m invoicer.client_cli add
+
+client-init: check-uv
+	@echo "📝 Creating sample clients..."
+	uv run python -m invoicer.client_cli init-samples
+
+client-search: check-uv
+	@echo "🔍 Search clients (usage: make client-search QUERY='search term')..."
+	@if [ -z "$(QUERY)" ]; then \
+		echo "❌ Please provide a search query: make client-search QUERY='search term'"; \
+	else \
+		uv run python -m invoicer.client_cli search "$(QUERY)"; \
+	fi
