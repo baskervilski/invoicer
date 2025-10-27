@@ -154,17 +154,15 @@ def init():
         print("📝 Creating .env configuration file...")
         env_content = """# Company Information
 COMPANY_NAME=Your Company Name
-COMPANY_ADDRESS=Your Address
-City, State ZIP
-Country
+COMPANY_ADDRESS="Your Address\nCity, State ZIP\nCountry"
 COMPANY_EMAIL=your.email@example.com
 COMPANY_PHONE=+1 (555) 123-4567
 
 # Invoice Settings
 HOURLY_RATE=75.0
 HOURS_PER_DAY=8.0
-CURRENCY=USD
-CURRENCY_SYMBOL=$
+CURRENCY=EUR
+CURRENCY_SYMBOL=€
 
 # Microsoft Graph API Settings (Required for email)
 # Get these from your Microsoft App Registration

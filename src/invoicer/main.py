@@ -283,11 +283,11 @@ def get_invoice_details() -> Optional[dict]:
         print(f"   Client: {client_data['name']}")
         print(f"   Email: {client_data['email']}")
         print(f"   Period: {month_year}")
-        print(f"   Days worked: {days_worked}")
-        print(f"   Hours per day: {config.HOURS_PER_DAY}")
-        print(f"   Hourly rate: {config.CURRENCY_SYMBOL}{config.HOURLY_RATE}")
-        print(f"   Total hours: {total_hours}")
-        print(f"   Total amount: {config.CURRENCY_SYMBOL}{subtotal:.2f}")
+        print(f"   Days worked: {days_worked:,}")
+        print(f"   Hours per day: {config.HOURS_PER_DAY:,.1f}")
+        print(f"   Hourly rate: {config.CURRENCY_SYMBOL}{config.HOURLY_RATE:,.2f}")
+        print(f"   Total hours: {total_hours:,.1f}")
+        print(f"   Total amount: {config.CURRENCY_SYMBOL}{subtotal:,.2f}")
 
         # Confirm
         confirm = input("\nProceed with invoice creation? (y/n): ").lower().strip()
@@ -351,7 +351,7 @@ def send_invoice_email(invoice_data: dict, pdf_path: Path) -> bool:
         body = email_sender.create_invoice_email_body(
             client_name,
             invoice_number,
-            f"{config.CURRENCY_SYMBOL}{total_amount:.2f}",
+            f"{config.CURRENCY_SYMBOL}{total_amount:,.2f}",
             month_year,
         )
 
@@ -430,8 +430,8 @@ COMPANY_PHONE=+1 (555) 123-4567
 # Invoice Settings
 HOURLY_RATE=75.0
 HOURS_PER_DAY=8.0
-CURRENCY=USD
-CURRENCY_SYMBOL=$
+CURRENCY=EUR
+CURRENCY_SYMBOL=€
 
 # Microsoft Graph API Settings (Required for email)
 # Get these from your Microsoft App Registration

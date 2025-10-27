@@ -13,10 +13,10 @@ COMPANY_EMAIL = os.getenv("COMPANY_EMAIL", "your.email@example.com")
 COMPANY_PHONE = os.getenv("COMPANY_PHONE", "+1 (555) 123-4567")
 
 # Invoice Settings
-HOURLY_RATE = float(os.getenv("HOURLY_RATE", "75.0"))  # Default $75/hour
+HOURLY_RATE = float(os.getenv("HOURLY_RATE", "75.0"))  # Default €75/hour
 HOURS_PER_DAY = float(os.getenv("HOURS_PER_DAY", "8.0"))  # Default 8 hours/day
-CURRENCY = os.getenv("CURRENCY", "USD")
-CURRENCY_SYMBOL = os.getenv("CURRENCY_SYMBOL", "$")
+CURRENCY = os.getenv("CURRENCY", "EUR")
+CURRENCY_SYMBOL = os.getenv("CURRENCY_SYMBOL", "€")
 
 # Microsoft Graph API Settings for email
 CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID")

@@ -121,8 +121,8 @@ def show(client_id: str):
     print(f"Notes: {client.get('notes', 'N/A')}")
     print(f"Created: {client.get('created_date', 'N/A')}")
     print(f"Last Invoice: {client.get('last_invoice_date', 'Never')}")
-    print(f"Total Invoices: {client.get('total_invoices', 0)}")
-    print(f"Total Amount: ${client.get('total_amount', 0.0):.2f}")
+    print(f"Total Invoices: {client.get('total_invoices', 0):,}")
+    print(f"Total Amount: ${client.get('total_amount', 0.0):,.2f}")
 
 
 @app.command()

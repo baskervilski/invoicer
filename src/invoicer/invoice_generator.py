@@ -217,11 +217,11 @@ class InvoiceGenerator:
         line_items_data.append(
             [
                 project_description,
-                str(days_worked),
+                f"{days_worked:,}",
                 f"{hours_per_day:.1f}",
-                f"{config.CURRENCY_SYMBOL}{hourly_rate:.2f}",
-                f"{total_hours:.1f}",
-                f"{config.CURRENCY_SYMBOL}{subtotal:.2f}",
+                f"{config.CURRENCY_SYMBOL}{hourly_rate:,.2f}",
+                f"{total_hours:,.1f}",
+                f"{config.CURRENCY_SYMBOL}{subtotal:,.2f}",
             ]
         )
 
@@ -283,19 +283,19 @@ class InvoiceGenerator:
         total_amount = subtotal + tax_amount
 
         # Build totals table
-        totals_data = [["", "Subtotal:", f"{config.CURRENCY_SYMBOL}{subtotal:.2f}"]]
+        totals_data = [["", "Subtotal:", f"{config.CURRENCY_SYMBOL}{subtotal:,.2f}"]]
 
         if tax_rate > 0:
             totals_data.append(
                 [
                     "",
                     f"Tax ({tax_rate * 100:.1f}%):",
-                    f"{config.CURRENCY_SYMBOL}{tax_amount:.2f}",
+                    f"{config.CURRENCY_SYMBOL}{tax_amount:,.2f}",
                 ]
             )
 
         totals_data.append(
-            ["", "Total Amount Due:", f"{config.CURRENCY_SYMBOL}{total_amount:.2f}"]
+            ["", "Total Amount Due:", f"{config.CURRENCY_SYMBOL}{total_amount:,.2f}"]
         )
 
         totals_table = Table(totals_data, colWidths=[4 * inch, 1.5 * inch, 1 * inch])

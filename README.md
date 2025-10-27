@@ -115,8 +115,8 @@ To send emails via Microsoft Graph API, you need to register an application:
    # Invoice Settings
    HOURLY_RATE=75.0
    HOURS_PER_DAY=8.0
-   CURRENCY=USD
-   CURRENCY_SYMBOL=$
+   CURRENCY=EUR
+   CURRENCY_SYMBOL=€
 
    # Microsoft Graph API Settings
    MICROSOFT_CLIENT_ID=your-client-id-from-azure
@@ -173,9 +173,9 @@ Project description (default: Consulting services for October 2024):
    Period: October 2024
    Days worked: 15
    Hours per day: 8.0
-   Hourly rate: $75
+   Hourly rate: €75
    Total hours: 120.0
-   Total amount: $9000.00
+   Total amount: €9,000.00
 
 Proceed with invoice creation? (y/n): y
 

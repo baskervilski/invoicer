@@ -6,6 +6,7 @@ This script demonstrates PDF creation without requiring Microsoft email setup
 
 from pathlib import Path
 from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from .config import HOURLY_RATE, CURRENCY_SYMBOL
 
 
 def demo_invoice_generation():
@@ -52,12 +53,12 @@ def demo_invoice_generation():
 
             # Calculate totals for display
             total_hours = client["days"] * 8.0  # Assuming 8 hours per day
-            total_amount = total_hours * 75.0  # Assuming $75/hour
+            total_amount = total_hours * HOURLY_RATE
 
             print(f"   Client: {client['name']}")
             print(f"   Period: {client['month']}")
-            print(f"   Days worked: {client['days']}")
-            print(f"   Total amount: ${total_amount:.2f}")
+            print(f"   Days worked: {client['days']:,}")
+            print(f"   Total amount: {CURRENCY_SYMBOL}{total_amount:,.2f}")
 
             # Generate PDF
             pdf_path = generator.create_invoice(invoice_data)
@@ -68,7 +69,7 @@ def demo_invoice_generation():
                 print(f"   ✅ Invoice created: {pdf_path_obj.name} ({file_size} bytes)")
                 created_invoices.append(pdf_path)
             else:
-                print(f"   ❌ Failed to create invoice")
+                print("   ❌ Failed to create invoice")
 
             print()
 
