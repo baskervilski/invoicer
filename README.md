@@ -173,14 +173,21 @@ Proceed with invoice creation? (y/n): y
 
 ```
 invoicer/
-├── main.py                 # Main application entry point
-├── invoice_generator.py    # PDF invoice generation
-├── email_sender.py        # Microsoft Graph email integration
-├── config.py              # Configuration management
+├── src/invoicer/          # Python module
+│   ├── main.py            # Main application entry point
+│   ├── invoice_generator.py # PDF invoice generation
+│   ├── email_sender.py    # Microsoft Graph email integration
+│   ├── client_manager.py  # Client database management
+│   ├── client_cli.py      # Client management CLI
+│   └── config.py          # Configuration management
 ├── .env                   # Environment variables (created on first run)
-├── invoices/              # Generated PDF invoices
-└── pyproject.toml         # Project dependencies
+├── invoices/              # Generated PDF invoices (created in CWD)
+├── clients/               # Client database files (created in CWD)
+├── Makefile              # Development and build commands
+└── pyproject.toml        # Project dependencies
 ```
+
+**Note**: The `invoices/` and `clients/` directories are created in your current working directory, not within the Python module. This allows you to organize your data separately from the code and run the invoicer from different directories for different projects or businesses.
 
 ## Customization
 

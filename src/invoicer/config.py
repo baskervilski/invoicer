@@ -31,9 +31,10 @@ SCOPES = [
 ]
 
 # Directories
-INVOICES_DIR = Path(__file__).parent / "invoices"
-TEMPLATES_DIR = Path(__file__).parent / "templates"
-CLIENTS_DIR = Path(__file__).parent / "clients"
+# Use current working directory instead of module directory
+INVOICES_DIR = Path.cwd() / "invoices"
+TEMPLATES_DIR = Path(__file__).parent / "templates"  # Keep templates in module for now
+CLIENTS_DIR = Path.cwd() / "clients"
 
 # Create directories if they don't exist
 INVOICES_DIR.mkdir(exist_ok=True)
