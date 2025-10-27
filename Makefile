@@ -87,7 +87,7 @@ run: check-uv
 # Run demo with sample invoices
 demo: check-uv
 	@echo "🎭 Running invoice generation demo..."
-	uv run python demo.py
+	uv run python -m invoicer.main
 
 # Run tests
 test: check-uv

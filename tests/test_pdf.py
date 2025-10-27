@@ -3,9 +3,9 @@
 Test script for invoice generation without email functionality
 """
 
-import os
+from pathlib import Path
 import sys
-from invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from invoicer.invoice_generator import InvoiceGenerator, create_sample_invoice_data
 
 
 def test_pdf_generation():
@@ -30,8 +30,9 @@ def test_pdf_generation():
         generator = InvoiceGenerator()
         pdf_path = generator.create_invoice(invoice_data)
 
-        if os.path.exists(pdf_path):
-            file_size = os.path.getsize(pdf_path)
+        pdf_path_obj = Path(pdf_path)
+        if pdf_path_obj.exists():
+            file_size = pdf_path_obj.stat().st_size
             print("✅ PDF generated successfully!")
             print(f"   File: {pdf_path}")
             print(f"   Size: {file_size} bytes")

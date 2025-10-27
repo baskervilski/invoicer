@@ -15,7 +15,7 @@ import socketserver
 import urllib.parse
 import time
 
-import config
+from . import config
 
 
 class EmailSender:
@@ -205,14 +205,13 @@ class EmailSender:
             Optional[Dict]: Attachment dictionary or None if failed
         """
         try:
-            import os
-
             with open(file_path, "rb") as file:
                 file_content = file.read()
                 encoded_content = base64.b64encode(file_content).decode("utf-8")
 
-            filename = os.path.basename(file_path)
-            file_size = os.path.getsize(file_path)
+            file_path_obj = Path(file_path)
+            filename = file_path_obj.name
+            file_size = file_path_obj.stat().st_size
 
             # Determine content type based on file extension
             content_type = "application/octet-stream"

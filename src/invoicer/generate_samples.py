@@ -3,8 +3,8 @@
 Generate sample invoices for different project scenarios
 """
 
-import os
-from invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from pathlib import Path
+from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
 
 
 def generate_samples():
@@ -22,7 +22,7 @@ def generate_samples():
     for name, email, days, month in scenarios:
         data = create_sample_invoice_data(name, email, days, month)
         path = generator.create_invoice(data)
-        print(f"✅ {name}: {os.path.basename(path)}")
+        print(f"✅ {name}: {Path(path).name}")
 
     print("✅ Sample invoices generated in invoices/ directory")
 

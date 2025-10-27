@@ -15,7 +15,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.platypus.flowables import HRFlowable
 from reportlab.lib.enums import TA_RIGHT, TA_LEFT
 
-import config
+from invoicer import config
 
 
 class InvoiceGenerator:

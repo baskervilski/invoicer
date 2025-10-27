@@ -6,15 +6,14 @@ This application creates professional PDF invoices based on days worked
 and sends them via Microsoft email.
 """
 
-import os
 from pathlib import Path
 import sys
 from datetime import datetime
 from typing import Optional
 
-from invoice_generator import InvoiceGenerator, create_sample_invoice_data
-from email_sender import EmailSender
-import config
+from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from .email_sender import EmailSender
+from . import config
 
 
 def main():
@@ -199,8 +198,8 @@ def setup_environment():
     print("🔧 Checking environment setup...")
 
     # Check if .env file exists
-    env_file = os.path.join(os.path.dirname(__file__), ".env")
-    if not os.path.exists(env_file):
+    env_file = Path(__file__).parent / ".env"
+    if not env_file.exists():
         create_env_file(env_file)
 
     # Check required configurations
@@ -225,7 +224,7 @@ def setup_environment():
     return True
 
 
-def create_env_file(env_file: str):
+def create_env_file(env_file: Path):
     """
     Create a sample .env file
 
@@ -254,8 +253,7 @@ MICROSOFT_TENANT_ID=your-tenant-id-here
 MICROSOFT_REDIRECT_URI=http://localhost:8080/callback
 """
 
-    with open(env_file, "w") as f:
-        f.write(env_content)
+    env_file.write_text(env_content)
 
     print(f"📝 Created sample .env file: {env_file}")
     print("Please update it with your actual values.")

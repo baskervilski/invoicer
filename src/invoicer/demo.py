@@ -4,8 +4,8 @@ Demo script showing the invoice generator functionality
 This script demonstrates PDF creation without requiring Microsoft email setup
 """
 
-import os
-from invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from pathlib import Path
+from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
 
 
 def demo_invoice_generation():
@@ -62,11 +62,10 @@ def demo_invoice_generation():
             # Generate PDF
             pdf_path = generator.create_invoice(invoice_data)
 
-            if os.path.exists(pdf_path):
-                file_size = os.path.getsize(pdf_path)
-                print(
-                    f"   ✅ Invoice created: {os.path.basename(pdf_path)} ({file_size} bytes)"
-                )
+            pdf_path_obj = Path(pdf_path)
+            if pdf_path_obj.exists():
+                file_size = pdf_path_obj.stat().st_size
+                print(f"   ✅ Invoice created: {pdf_path_obj.name} ({file_size} bytes)")
                 created_invoices.append(pdf_path)
             else:
                 print(f"   ❌ Failed to create invoice")
@@ -81,9 +80,9 @@ def demo_invoice_generation():
     print("=== Demo Summary ===")
     print(f"Successfully created {len(created_invoices)} invoices:")
     for invoice_path in created_invoices:
-        print(f"  📄 {os.path.basename(invoice_path)}")
+        print(f"  📄 {Path(invoice_path).name}")
 
-    print(f"\nInvoices saved in: {os.path.join(os.getcwd(), 'invoices')}")
+    print(f"\nInvoices saved in: {Path.cwd() / 'invoices'}")
     print("\n💡 To use the full application with email functionality:")
     print("   1. Set up Microsoft App Registration (see README.md)")
     print("   2. Update .env file with your credentials")

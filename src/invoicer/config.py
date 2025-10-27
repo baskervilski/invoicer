@@ -1,5 +1,6 @@
 # Configuration settings for the invoicer application
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -30,9 +31,9 @@ SCOPES = [
 ]
 
 # Directories
-INVOICES_DIR = os.path.join(os.path.dirname(__file__), "invoices")
-TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
+INVOICES_DIR = Path(__file__).parent / "invoices"
+TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 # Create directories if they don't exist
-os.makedirs(INVOICES_DIR, exist_ok=True)
-os.makedirs(TEMPLATES_DIR, exist_ok=True)
+INVOICES_DIR.mkdir(exist_ok=True)
+TEMPLATES_DIR.mkdir(exist_ok=True)
