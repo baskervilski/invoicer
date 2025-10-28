@@ -29,12 +29,11 @@ def list_clients():
     print("=" * 70)
 
     for client in clients:
-        print(f"ID: {client['id']}")
-        print(f"Name: {client['name']}")
-        print(f"Email: {client['email']}")
-        print(f"Company: {client.get('company', 'N/A')}")
-        print(f"Client Code: {client.get('client_code', 'N/A')}")
-        print(f"Total Invoices: {client.get('total_invoices', 0)}")
+        print(f"ID: {client.id}")
+        print(f"Name: {client.name}")
+        print(f"Email: {client.email}")
+        print(f"Client Code: {client.client_code}")
+        print(f"Total Invoices: {client.total_invoices}")
         print("-" * 50)
 
 
@@ -101,10 +100,9 @@ def search(query: str):
     print("=" * 60)
 
     for client in results:
-        print(f"ID: {client['id']}")
-        print(f"Name: {client['name']}")
-        print(f"Email: {client['email']}")
-        print(f"Company: {client.get('company', 'N/A')}")
+        print(f"ID: {client.id}")
+        print(f"Name: {client.name}")
+        print(f"Email: {client.email}")
         print("-" * 40)
 
 
@@ -118,20 +116,19 @@ def show(client_id: str):
         print(f"Client with ID '{client_id}' not found.")
         return
 
-    print(f"\n👤 Client Details: {client['name']}")
+    print(f"\n👤 Client Details: {client.name}")
     print("=" * 50)
-    print(f"ID: {client['id']}")
-    print(f"Name: {client['name']}")
-    print(f"Email: {client['email']}")
-    print(f"Company: {client.get('company', 'N/A')}")
-    print(f"Client Code: {client.get('client_code', 'N/A')}")
-    print(f"Phone: {client.get('phone', 'N/A')}")
-    print(f"Address: {client.get('address', 'N/A')}")
-    print(f"Notes: {client.get('notes', 'N/A')}")
-    print(f"Created: {client.get('created_date', 'N/A')}")
-    print(f"Last Invoice: {client.get('last_invoice_date', 'Never')}")
-    print(f"Total Invoices: {client.get('total_invoices', 0):,}")
-    print(f"Total Amount: ${client.get('total_amount', 0.0):,.2f}")
+    print(f"ID: {client.id}")
+    print(f"Name: {client.name}")
+    print(f"Email: {client.email}")
+    print(f"Client Code: {client.client_code}")
+    print(f"Phone: {client.phone}")
+    print(f"Address: {client.address}")
+    print(f"Notes: {client.notes}")
+    print(f"Created: {client.created_date}")
+    print(f"Last Invoice: {client.last_invoice_date or 'Never'}")
+    print(f"Total Invoices: {client.total_invoices:,}")
+    print(f"Total Amount: ${client.total_amount:,.2f}")
 
 
 @app.command()
@@ -144,14 +141,14 @@ def delete(client_id: str):
         print(f"Client with ID '{client_id}' not found.")
         return
 
-    print(f"⚠️  Are you sure you want to delete client '{client['name']}'?")
+    print(f"⚠️  Are you sure you want to delete client '{client.name}'?")
     confirm = (
         input("This action cannot be undone. Type 'yes' to confirm: ").strip().lower()
     )
 
     if confirm == "yes":
         if client_manager.delete_client(client_id):
-            print(f"✅ Client '{client['name']}' deleted successfully.")
+            print(f"✅ Client '{client.name}' deleted successfully.")
         else:
             print("❌ Failed to delete client.")
     else:

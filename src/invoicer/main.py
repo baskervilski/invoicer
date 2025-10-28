@@ -11,6 +11,8 @@ import sys
 from datetime import datetime
 from typing import Optional, Dict
 
+from invoicer.models import ClientModel
+
 from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
 from .email_sender import EmailSender
 from .client_manager import ClientManager, create_sample_clients
@@ -57,12 +59,12 @@ def main():
         sys.exit(1)
 
 
-def select_or_create_client() -> Optional[Dict]:
+def select_or_create_client() -> Optional[ClientModel]:
     """
     Allow user to select existing client or create new one
 
     Returns:
-        Optional[Dict]: Client data or None if cancelled
+        Optional[ClientModel]: Client data or None if cancelled
     """
     client_manager = ClientManager()
 
@@ -94,7 +96,7 @@ def select_or_create_client() -> Optional[Dict]:
             print("Invalid choice. Please enter 1, 2, or 3.")
 
 
-def select_existing_client(client_manager: ClientManager) -> Optional[Dict]:
+def select_existing_client(client_manager: ClientManager) -> Optional[ClientModel]:
     """Select from existing clients"""
     clients = client_manager.list_clients()
 
@@ -109,7 +111,6 @@ def select_existing_client(client_manager: ClientManager) -> Optional[Dict]:
 
         print(f"{i:2d}. {client.name}")
         print(f"     Email: {client.email}")
-        print(f"     Company: {client.company}")
         print(f"     Last Invoice: {last_invoice_str}")
         print(f"     Total Invoices: {client.total_invoices}")
         print()
@@ -137,7 +138,7 @@ def select_existing_client(client_manager: ClientManager) -> Optional[Dict]:
             print("Please enter a valid number or 'b' to go back.")
 
 
-def search_and_select_client(client_manager: ClientManager) -> Optional[Dict]:
+def search_and_select_client(client_manager: ClientManager) -> Optional[ClientModel]:
     """Search and select client"""
     query = input("🔍 Enter search term (name, email, or company): ").strip()
     if not query:
@@ -158,8 +159,6 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[Dict]:
 
     for i, client in enumerate(results, 1):
         print(f"{i:2d}. {client.name} ({client.email})")
-        if client.company != client.name:
-            print(f"     Company: {client.company}")
 
     while True:
         try:
@@ -183,7 +182,7 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[Dict]:
             print("Please enter a valid number or 'b' to go back.")
 
 
-def create_new_client(client_manager: ClientManager) -> Optional[Dict]:
+def create_new_client(client_manager: ClientManager) -> Optional[ClientModel]:
     """Create a new client"""
     print("\n📝 Create New Client")
     print("=" * 50)
@@ -251,7 +250,7 @@ def get_invoice_details() -> Optional[dict]:
         if not client_data:
             return None
 
-        print(f"\n📋 Creating invoice for: {client_data['name']}")
+        print(f"\n📋 Creating invoice for: {client_data.name}")
         print("=" * 50)
 
         # Days worked
@@ -286,8 +285,8 @@ def get_invoice_details() -> Optional[dict]:
 
         # Display summary
         print("\n📋 Invoice Summary:")
-        print(f"   Client: {client_data['name']}")
-        print(f"   Email: {client_data['email']}")
+        print(f"   Client: {client_data.name}")
+        print(f"   Email: {client_data.email}")
         print(f"   Period: {month_year}")
         print(f"   Days worked: {days_worked:,}")
         print(f"   Hours per day: {config.HOURS_PER_DAY:,.1f}")
@@ -302,16 +301,16 @@ def get_invoice_details() -> Optional[dict]:
 
         # Create invoice data
         invoice_data = create_sample_invoice_data(
-            client_data["name"],
-            client_data["email"],
-            client_data.get("client_code", "CLIENT"),
+            client_data.name,
+            client_data.email,
+            client_data.client_code,
             days_worked,
             month_year,
         )
         invoice_data["project_description"] = project_description
 
         # Store client data and days worked for later use
-        invoice_data["client_id"] = client_data.get("id")
+        invoice_data["client_id"] = client_data.id
         invoice_data["days_worked"] = days_worked
 
         return invoice_data

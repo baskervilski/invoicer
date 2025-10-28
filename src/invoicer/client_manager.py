@@ -27,10 +27,10 @@ class ClientManager:
 
             self.clients_dir = config.CLIENTS_DIR
         else:
-            self.clients_dir = Path(clients_dir)
+            self.clients_dir = Path(clients_dir) / "clients"
 
         # Create clients directory if it doesn't exist
-        self.clients_dir.mkdir(exist_ok=True)
+        self.clients_dir.mkdir(parents=True, exist_ok=True)
 
         # Create index file if it doesn't exist
         self.index_file = self.clients_dir / "clients_index.json"
@@ -97,7 +97,6 @@ class ClientManager:
             email=client_data["email"],
             address=client_data.get("address", ""),
             phone=client_data.get("phone", ""),
-            company=client_data.get("company", client_data["name"]),
             client_code=client_data.get("client_code", client_data["name"][:3].upper()),
             notes=client_data.get("notes", ""),
         )
@@ -111,7 +110,6 @@ class ClientManager:
         index["clients"][client_id] = {
             "name": client_model.name,
             "email": client_model.email,
-            "company": client_model.company,
             "client_code": client_model.client_code,
             "created_date": client_model.created_date.isoformat(),
             "last_invoice_date": None,
@@ -131,13 +129,30 @@ class ClientManager:
             ClientModel or None: Client model if found, None otherwise
         """
         client_file = self.clients_dir / f"{client_id}.json"
+
         if not client_file.exists():
             return None
 
         try:
             data = json.loads(client_file.read_text())
+
+            # Handle backwards compatibility - if old data has 'company' but no 'name', use company as name
+            if "company" in data and "name" not in data:
+                data["name"] = data["company"]
+            elif "company" in data and not data.get("name"):
+                data["name"] = data["company"]
+
+            # Remove the old company field if it exists
+            if "company" in data:
+                del data["company"]
+
+            # Create and return the model
             return ClientModel(**data)
-        except (json.JSONDecodeError, ValidationError):
+        except json.JSONDecodeError:
+            return None
+        except ValidationError:
+            return None
+        except Exception:
             return None
 
     def list_clients(self) -> List[ClientSummaryModel]:
@@ -151,11 +166,15 @@ class ClientManager:
 
         for client_id, client_summary in index["clients"].items():
             try:
+                # Handle backwards compatibility - if old data has 'company' but no 'name', use company as name
+                client_name = client_summary.get("name") or client_summary.get(
+                    "company", "Unknown Client"
+                )
+
                 client_model = ClientSummaryModel(
                     id=client_id,
-                    name=client_summary["name"],
+                    name=client_name,
                     email=client_summary["email"],
-                    company=client_summary["company"],
                     client_code=client_summary["client_code"],
                     created_date=datetime.fromisoformat(client_summary["created_date"]),
                     last_invoice_date=datetime.fromisoformat(
@@ -206,17 +225,13 @@ class ClientManager:
         )
 
         # Update index if necessary
-        if any(
-            key in ["name", "email", "company", "client_code"] for key in updates.keys()
-        ):
+        if any(key in ["name", "email", "client_code"] for key in updates.keys()):
             index = self._load_index()
             if client_id in index["clients"]:
                 if "name" in updates:
                     index["clients"][client_id]["name"] = updated_model.name
                 if "email" in updates:
                     index["clients"][client_id]["email"] = updated_model.email
-                if "company" in updates:
-                    index["clients"][client_id]["company"] = updated_model.company
                 if "client_code" in updates:
                     index["clients"][client_id]["client_code"] = (
                         updated_model.client_code
@@ -297,7 +312,7 @@ class ClientManager:
         return True
 
     def search_clients(self, query: str) -> List[ClientSummaryModel]:
-        """Search clients by name, email, or company."""
+        """Search clients by name or email."""
         all_clients = self.list_clients()
         if not query:
             return all_clients
@@ -309,7 +324,6 @@ class ClientManager:
             if (
                 query_lower in client.name.lower()
                 or query_lower in client.email.lower()
-                or (client.company and query_lower in client.company.lower())
             )
         ]
 
@@ -322,7 +336,6 @@ def create_sample_clients(client_manager: ClientManager):
             "email": "billing@acme-corp.com",
             "address": "123 Business Ave\nNew York, NY 10001",
             "phone": "+1 (555) 123-4567",
-            "company": "Acme Corporation",
             "client_code": "ACM",
             "notes": "Long-term client, payment terms NET 30",
         },
@@ -331,7 +344,6 @@ def create_sample_clients(client_manager: ClientManager):
             "email": "finance@techstart.io",
             "address": "456 Innovation Drive\nSan Francisco, CA 94107",
             "phone": "+1 (555) 987-6543",
-            "company": "TechStart Solutions Inc",
             "client_code": "TSS",
             "notes": "Startup client, prefers electronic invoices",
         },
@@ -340,7 +352,6 @@ def create_sample_clients(client_manager: ClientManager):
             "email": "accounts@globaldynamics.com",
             "address": "789 Corporate Blvd\nChicago, IL 60601",
             "phone": "+1 (555) 246-8135",
-            "company": "Global Dynamics Inc",
             "client_code": "GDI",
             "notes": "Enterprise client, requires detailed project descriptions",
         },

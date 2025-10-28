@@ -13,9 +13,8 @@ class ClientModel(BaseModel):
     """Pydantic model for client data"""
 
     id: str = Field(..., description="Unique client identifier")
-    name: str = Field(..., description="Client name", min_length=1)
+    name: str = Field(..., description="Client/Company name", min_length=1)
     email: EmailStr = Field(..., description="Client email address")
-    company: str = Field(..., description="Company name", min_length=1)
     client_code: str = Field(
         ..., description="Client code for invoices", min_length=1, max_length=10
     )
@@ -38,11 +37,11 @@ class ClientModel(BaseModel):
         """Ensure client code is uppercase"""
         return v.upper()
 
-    @field_validator("name", "company")
-    def validate_names(cls, v):
-        """Ensure names are not empty strings"""
+    @field_validator("name")
+    def validate_name(cls, v):
+        """Ensure name is not empty string"""
         if not v.strip():
-            raise ValueError("Name and company cannot be empty")
+            raise ValueError("Name cannot be empty")
         return v.strip()
 
     class Config:
@@ -60,7 +59,6 @@ class ClientSummaryModel(BaseModel):
     id: str
     name: str
     email: EmailStr
-    company: str
     client_code: str
     created_date: datetime
     last_invoice_date: Optional[datetime] = None
