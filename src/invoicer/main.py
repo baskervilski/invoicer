@@ -102,17 +102,16 @@ def select_existing_client(client_manager: ClientManager) -> Optional[Dict]:
     print("=" * 50)
 
     for i, client in enumerate(clients, 1):
-        last_invoice = client.get("last_invoice_date")
-        if last_invoice:
-            last_invoice_str = datetime.fromisoformat(last_invoice).strftime("%Y-%m-%d")
+        if client.last_invoice_date:
+            last_invoice_str = client.last_invoice_date.strftime("%Y-%m-%d")
         else:
             last_invoice_str = "Never"
 
-        print(f"{i:2d}. {client['name']}")
-        print(f"     Email: {client['email']}")
-        print(f"     Company: {client.get('company', 'N/A')}")
+        print(f"{i:2d}. {client.name}")
+        print(f"     Email: {client.email}")
+        print(f"     Company: {client.company}")
         print(f"     Last Invoice: {last_invoice_str}")
-        print(f"     Total Invoices: {client.get('total_invoices', 0)}")
+        print(f"     Total Invoices: {client.total_invoices}")
         print()
 
     while True:
@@ -128,8 +127,8 @@ def select_existing_client(client_manager: ClientManager) -> Optional[Dict]:
             if 0 <= client_index < len(clients):
                 selected_client = clients[client_index]
                 # Get full client data
-                full_client_data = client_manager.get_client(selected_client["id"])
-                print(f"\n✅ Selected: {selected_client['name']}")
+                full_client_data = client_manager.get_client(selected_client.id)
+                print(f"\n✅ Selected: {selected_client.name}")
                 return full_client_data
             else:
                 print("Invalid selection. Please try again.")
@@ -158,9 +157,9 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[Dict]:
     print("=" * 50)
 
     for i, client in enumerate(results, 1):
-        print(f"{i:2d}. {client['name']} ({client['email']})")
-        if client.get("company") != client["name"]:
-            print(f"     Company: {client.get('company', 'N/A')}")
+        print(f"{i:2d}. {client.name} ({client.email})")
+        if client.company != client.name:
+            print(f"     Company: {client.company}")
 
     while True:
         try:
@@ -174,8 +173,8 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[Dict]:
             client_index = int(choice) - 1
             if 0 <= client_index < len(results):
                 selected_client = results[client_index]
-                full_client_data = client_manager.get_client(selected_client["id"])
-                print(f"\n✅ Selected: {selected_client['name']}")
+                full_client_data = client_manager.get_client(selected_client.id)
+                print(f"\n✅ Selected: {selected_client.name}")
                 return full_client_data
             else:
                 print("Invalid selection. Please try again.")

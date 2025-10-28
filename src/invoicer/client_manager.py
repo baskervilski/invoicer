@@ -8,6 +8,9 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
+from pydantic import ValidationError
+
+from .models import ClientModel, ClientSummaryModel
 
 
 class ClientManager:
@@ -43,7 +46,7 @@ class ClientManager:
         }
         self.index_file.write_text(json.dumps(initial_data, indent=2))
 
-    def _load_index(self) -> Dict:
+    def _load_index(self) -> dict[str, dict]:
         """Load the client index"""
         try:
             return json.loads(self.index_file.read_text())
@@ -84,44 +87,33 @@ class ClientManager:
         Returns:
             str: The generated client ID
         """
-        required_fields = ["name", "email"]
-        for field in required_fields:
-            if field not in client_data:
-                raise ValueError(f"Missing required field: {field}")
-
         # Generate client ID
         client_id = self._generate_client_id(client_data["name"])
 
-        # Prepare client data with metadata
-        full_client_data = {
-            "id": client_id,
-            "name": client_data["name"],
-            "email": client_data["email"],
-            "address": client_data.get("address", ""),
-            "phone": client_data.get("phone", ""),
-            "company": client_data.get("company", client_data["name"]),
-            "client_code": client_data.get(
-                "client_code", client_data["name"][:3].upper()
-            ),
-            "notes": client_data.get("notes", ""),
-            "created_date": datetime.now().isoformat(),
-            "last_invoice_date": None,
-            "total_invoices": 0,
-            "total_amount": 0.0,
-        }
+        # Create Pydantic model with validation
+        client_model = ClientModel(
+            id=client_id,
+            name=client_data["name"],
+            email=client_data["email"],
+            address=client_data.get("address", ""),
+            phone=client_data.get("phone", ""),
+            company=client_data.get("company", client_data["name"]),
+            client_code=client_data.get("client_code", client_data["name"][:3].upper()),
+            notes=client_data.get("notes", ""),
+        )
 
         # Save individual client file
         client_file = self.clients_dir / f"{client_id}.json"
-        client_file.write_text(json.dumps(full_client_data, indent=2))
+        client_file.write_text(client_model.model_dump_json(indent=2))
 
-        # Update index
+        # Update index using model data
         index = self._load_index()
         index["clients"][client_id] = {
-            "name": client_data["name"],
-            "email": client_data["email"],
-            "company": full_client_data["company"],
-            "client_code": full_client_data["client_code"],
-            "created_date": full_client_data["created_date"],
+            "name": client_model.name,
+            "email": client_model.email,
+            "company": client_model.company,
+            "client_code": client_model.client_code,
+            "created_date": client_model.created_date.isoformat(),
             "last_invoice_date": None,
             "total_invoices": 0,
         }
@@ -129,38 +121,57 @@ class ClientManager:
 
         return client_id
 
-    def get_client(self, client_id: str) -> Optional[Dict]:
+    def get_client(self, client_id: str) -> Optional[ClientModel]:
         """Get client data by ID
 
         Args:
             client_id: The client ID
 
         Returns:
-            Dict or None: Client data if found, None otherwise
+            ClientModel or None: Client model if found, None otherwise
         """
         client_file = self.clients_dir / f"{client_id}.json"
         if not client_file.exists():
             return None
 
         try:
-            return json.loads(client_file.read_text())
-        except json.JSONDecodeError:
+            data = json.loads(client_file.read_text())
+            return ClientModel(**data)
+        except (json.JSONDecodeError, ValidationError):
             return None
 
-    def list_clients(self) -> List[Dict]:
+    def list_clients(self) -> List[ClientSummaryModel]:
         """List all clients
 
         Returns:
-            List of client summary dictionaries
+            List of client summary models
         """
         index = self._load_index()
         clients = []
 
         for client_id, client_summary in index["clients"].items():
-            clients.append({"id": client_id, **client_summary})
+            try:
+                client_model = ClientSummaryModel(
+                    id=client_id,
+                    name=client_summary["name"],
+                    email=client_summary["email"],
+                    company=client_summary["company"],
+                    client_code=client_summary["client_code"],
+                    created_date=datetime.fromisoformat(client_summary["created_date"]),
+                    last_invoice_date=datetime.fromisoformat(
+                        client_summary["last_invoice_date"]
+                    )
+                    if client_summary.get("last_invoice_date")
+                    else None,
+                    total_invoices=client_summary.get("total_invoices", 0),
+                )
+                clients.append(client_model)
+            except (ValidationError, ValueError, KeyError):
+                # Skip invalid entries
+                continue
 
         # Sort by name
-        return sorted(clients, key=lambda x: x["name"].lower())
+        return sorted(clients, key=lambda x: x.name.lower())
 
     def update_client(self, client_id: str, updates: Dict) -> bool:
         """Update client information
@@ -172,29 +183,44 @@ class ClientManager:
         Returns:
             bool: True if successful, False if client not found
         """
-        client_data = self.get_client(client_id)
-        if not client_data:
+        client_model = self.get_client(client_id)
+        if not client_model:
             return False
 
-        # Update client data
+        # Create updated data dict
+        current_data = client_model.model_dump()
         for key, value in updates.items():
             if key not in ["id", "created_date"]:  # Protect immutable fields
-                client_data[key] = value
+                current_data[key] = value
+
+        # Validate the updated data
+        try:
+            updated_model = ClientModel(**current_data)
+        except ValidationError:
+            return False
 
         # Save updated client file
         client_file = self.clients_dir / f"{client_id}.json"
-        client_file.write_text(json.dumps(client_data, indent=2))
+        client_file.write_text(
+            json.dumps(updated_model.model_dump(mode="json"), indent=2)
+        )
 
         # Update index if necessary
-        if any(key in ["name", "email", "company"] for key in updates.keys()):
+        if any(
+            key in ["name", "email", "company", "client_code"] for key in updates.keys()
+        ):
             index = self._load_index()
             if client_id in index["clients"]:
                 if "name" in updates:
-                    index["clients"][client_id]["name"] = updates["name"]
+                    index["clients"][client_id]["name"] = updated_model.name
                 if "email" in updates:
-                    index["clients"][client_id]["email"] = updates["email"]
+                    index["clients"][client_id]["email"] = updated_model.email
                 if "company" in updates:
-                    index["clients"][client_id]["company"] = updates["company"]
+                    index["clients"][client_id]["company"] = updated_model.company
+                if "client_code" in updates:
+                    index["clients"][client_id]["client_code"] = (
+                        updated_model.client_code
+                    )
                 self._save_index(index)
 
         return True
@@ -206,34 +232,44 @@ class ClientManager:
             client_id: The client ID
             invoice_data: Invoice data containing amount and date info
         """
-        client_data = self.get_client(client_id)
-        if not client_data:
+        client_model = self.get_client(client_id)
+        if not client_model:
             return
-
-        # Update client statistics
-        client_data["total_invoices"] += 1
-        client_data["last_invoice_date"] = datetime.now().isoformat()
 
         # Calculate invoice amount
         days_worked = invoice_data.get("days_worked", 0)
         from . import config
 
         amount = days_worked * config.HOURS_PER_DAY * config.HOURLY_RATE
-        client_data["total_amount"] += amount
+
+        # Create updated data
+        updated_data = client_model.model_dump()
+        updated_data.update(
+            {
+                "total_invoices": client_model.total_invoices + 1,
+                "last_invoice_date": datetime.now(),
+                "total_amount": client_model.total_amount + amount,
+            }
+        )
+
+        # Create updated model with new statistics
+        updated_model = ClientModel(**updated_data)
 
         # Save updated client data
         client_file = self.clients_dir / f"{client_id}.json"
-        client_file.write_text(json.dumps(client_data, indent=2))
+        client_file.write_text(
+            json.dumps(updated_model.model_dump(mode="json"), indent=2)
+        )
 
         # Update index
         index = self._load_index()
         if client_id in index["clients"]:
-            index["clients"][client_id]["last_invoice_date"] = client_data[
-                "last_invoice_date"
-            ]
-            index["clients"][client_id]["total_invoices"] = client_data[
-                "total_invoices"
-            ]
+            index["clients"][client_id]["last_invoice_date"] = (
+                updated_model.last_invoice_date.isoformat()
+                if updated_model.last_invoice_date
+                else None
+            )
+            index["clients"][client_id]["total_invoices"] = updated_model.total_invoices
             self._save_index(index)
 
     def delete_client(self, client_id: str) -> bool:
@@ -260,28 +296,22 @@ class ClientManager:
 
         return True
 
-    def search_clients(self, query: str) -> List[Dict]:
-        """Search clients by name, email, or company
-
-        Args:
-            query: Search query
-
-        Returns:
-            List of matching client dictionaries
-        """
-        query_lower = query.lower()
+    def search_clients(self, query: str) -> List[ClientSummaryModel]:
+        """Search clients by name, email, or company."""
         all_clients = self.list_clients()
+        if not query:
+            return all_clients
 
-        matching_clients = []
-        for client in all_clients:
+        query_lower = query.lower()
+        return [
+            client
+            for client in all_clients
             if (
-                query_lower in client["name"].lower()
-                or query_lower in client["email"].lower()
-                or query_lower in client.get("company", "").lower()
-            ):
-                matching_clients.append(client)
-
-        return matching_clients
+                query_lower in client.name.lower()
+                or query_lower in client.email.lower()
+                or (client.company and query_lower in client.company.lower())
+            )
+        ]
 
 
 def create_sample_clients(client_manager: ClientManager):
