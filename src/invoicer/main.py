@@ -206,6 +206,12 @@ def create_new_client(client_manager: ClientManager) -> Optional[Dict]:
         if not company:
             company = name
 
+        # Client code - required field for invoice organization
+        default_code = name[:3].upper()
+        client_code = input(f"Client code (default: {default_code}): ").strip()
+        if not client_code:
+            client_code = default_code
+
         address = input("Address (optional): ").strip()
         phone = input("Phone (optional): ").strip()
         notes = input("Notes (optional): ").strip()
@@ -215,6 +221,7 @@ def create_new_client(client_manager: ClientManager) -> Optional[Dict]:
             "name": name,
             "email": email,
             "company": company,
+            "client_code": client_code,
             "address": address,
             "phone": phone,
             "notes": notes,
@@ -296,7 +303,11 @@ def get_invoice_details() -> Optional[dict]:
 
         # Create invoice data
         invoice_data = create_sample_invoice_data(
-            client_data["name"], client_data["email"], days_worked, month_year
+            client_data["name"],
+            client_data["email"],
+            client_data.get("client_code", "CLIENT"),
+            days_worked,
+            month_year,
         )
         invoice_data["project_description"] = project_description
 

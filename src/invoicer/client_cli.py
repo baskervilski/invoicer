@@ -33,6 +33,7 @@ def list_clients():
         print(f"Name: {client['name']}")
         print(f"Email: {client['email']}")
         print(f"Company: {client.get('company', 'N/A')}")
+        print(f"Client Code: {client.get('client_code', 'N/A')}")
         print(f"Total Invoices: {client.get('total_invoices', 0)}")
         print("-" * 50)
 
@@ -59,6 +60,12 @@ def add():
         if not company:
             company = name
 
+        # Client code - required field for invoice organization
+        default_code = name[:3].upper()
+        client_code = input(f"Client code (default: {default_code}): ").strip()
+        if not client_code:
+            client_code = default_code
+
         address = input("Address (optional): ").strip()
         phone = input("Phone (optional): ").strip()
         notes = input("Notes (optional): ").strip()
@@ -67,6 +74,7 @@ def add():
             "name": name,
             "email": email,
             "company": company,
+            "client_code": client_code,
             "address": address,
             "phone": phone,
             "notes": notes,
@@ -116,6 +124,7 @@ def show(client_id: str):
     print(f"Name: {client['name']}")
     print(f"Email: {client['email']}")
     print(f"Company: {client.get('company', 'N/A')}")
+    print(f"Client Code: {client.get('client_code', 'N/A')}")
     print(f"Phone: {client.get('phone', 'N/A')}")
     print(f"Address: {client.get('address', 'N/A')}")
     print(f"Notes: {client.get('notes', 'N/A')}")

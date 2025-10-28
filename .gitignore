@@ -30,7 +30,7 @@ env/
 .env
 
 # Generated invoices (comment out if you want to track them)
-invoices/*.pdf
+invoices/
 
 # Client data (comment out if you want to track client information)
 clients/

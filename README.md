@@ -198,15 +198,28 @@ invoicer/
 │   ├── client_cli.py      # Client management CLI
 │   └── config.py          # Configuration management
 ├── .env                   # Environment variables (created on first run)
-├── invoices/              # Generated PDF invoices (created in CWD)
+├── invoices/              # Generated PDF invoices (organized by year/client)
+│   └── 2025/              # Year-based organization
+│       ├── ACM/           # Client code directories
+│       ├── TSS/           
+│       └── GDI/           
 ├── clients/               # Client database files (created in CWD)
 ├── Makefile              # Development and build commands
 └── pyproject.toml        # Project dependencies
 ```
 
-**Note**: The `invoices/` and `clients/` directories are created in your current working directory, not within the Python module. This allows you to organize your data separately from the code and run the invoicer from different directories for different projects or businesses.
+**Note**: The `invoices/` and `clients/` directories are created in your current working directory. Invoices are automatically organized by year and client code (e.g., `invoices/2025/ACM/Invoice_INV-202510-ACM.pdf`) for easy organization and retrieval.
 
 ## Customization
+
+### Client Codes & Organization
+
+Each client has a manually defined **client code** (e.g., "ACM", "TSS", "GDI") used for:
+- Invoice numbering and templates
+- Directory organization (`invoices/2025/ACM/`)
+- Easy identification and sorting
+
+When adding clients, you'll be prompted for a client code (defaults to first 3 letters of company name).
 
 ### Invoice Number Templates
 
@@ -219,16 +232,34 @@ Customize your invoice numbering scheme in the `.env` file:
 # {month:02d} - Zero-padded month (01-12)
 # {day} - Day of month (1-31)
 # {day:02d} - Zero-padded day (01-31)
-# {client_code} - First 3 letters of client name (uppercase)
-# {client} - Full client name
+# {client_code} - Manually defined client code (e.g., ACM, TSS)
 # {invoice_number} - Sequential invoice number (001, 002, etc.)
 
 # Examples:
 INVOICE_NUMBER_TEMPLATE=INV-{year}{month:02d}-{client_code}    # INV-202410-ACM
 INVOICE_NUMBER_TEMPLATE={client_code}-{year}-{invoice_number}  # ACM-2024-001
 INVOICE_NUMBER_TEMPLATE={year}-{invoice_number}                # 2024-001
-INVOICE_NUMBER_TEMPLATE={client}-{year}{month:02d}             # Acme Corporation-202410
 ```
+
+### Directory Structure
+
+Invoices are automatically organized in a hierarchical structure:
+```
+invoices/
+├── 2025/
+│   ├── ACM/
+│   │   ├── Invoice_INV-202510-ACM.pdf
+│   │   └── Invoice_INV-202511-ACM.pdf
+│   ├── TSS/
+│   │   └── Invoice_INV-202510-TSS.pdf
+│   └── GDI/
+│       └── Invoice_INV-202510-GDI.pdf
+└── 2024/
+    └── ACM/
+        └── Invoice_INV-202412-ACM.pdf
+```
+
+This organization makes it easy to find invoices by year and client, backup client-specific data, and maintain clean file organization as your business grows.
 
 ### Invoice Styling
 

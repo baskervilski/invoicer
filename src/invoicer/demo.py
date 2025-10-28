@@ -19,18 +19,21 @@ def demo_invoice_generation():
         {
             "name": "Acme Corporation",
             "email": "billing@acme-corp.com",
+            "client_code": "ACM",
             "days": 20,
             "month": "October 2024",
         },
         {
             "name": "TechStart Solutions",
             "email": "finance@techstart.io",
+            "client_code": "TSS",
             "days": 15,
             "month": "September 2024",
         },
         {
             "name": "Global Dynamics Inc",
             "email": "accounts@globaldynamics.com",
+            "client_code": "GDI",
             "days": 12,
             "month": "October 2024",
         },
@@ -47,6 +50,7 @@ def demo_invoice_generation():
             invoice_data = create_sample_invoice_data(
                 client_name=client["name"],
                 client_email=client["email"],
+                client_code=client["client_code"],
                 days_worked=client["days"],
                 month_year=client["month"],
             )

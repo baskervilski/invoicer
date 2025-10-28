@@ -81,11 +81,21 @@ class InvoiceGenerator:
         Returns:
             str: Path to the generated PDF file
         """
-        # Generate filename
+        # Get client info and invoice details
         invoice_number = invoice_data.get("invoice_number", "INV-001")
-        client_name = invoice_data.get("client_name", "Client").replace(" ", "_")
-        filename = f"Invoice_{invoice_number}_{client_name}.pdf"
-        filepath = Path(config.INVOICES_DIR) / filename
+        client_info = invoice_data.get("client_info", {})
+        client_code = client_info.get("client_code", "CLIENT")
+        invoice_date = datetime.now()
+        year = invoice_date.year
+
+        # Create year/client directory structure
+        year_dir = Path(config.INVOICES_DIR) / str(year)
+        client_dir = year_dir / client_code
+        client_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate filename
+        filename = f"Invoice_{invoice_number}.pdf"
+        filepath = client_dir / filename
 
         # Create the PDF document
         doc = SimpleDocTemplate(
@@ -345,13 +355,13 @@ class InvoiceGenerator:
 
 
 def generate_invoice_number(
-    client_name: str, invoice_date: datetime | None = None
+    client_code: str, invoice_date: datetime | None = None
 ) -> str:
     """
     Generate invoice number using the configured template
 
     Args:
-        client_name: Name of the client
+        client_code: Client code (e.g., "ACM", "TSS") - manually defined
         invoice_date: Date for the invoice (defaults to current date)
 
     Returns:
@@ -363,15 +373,11 @@ def generate_invoice_number(
         - {month:02d}: Zero-padded month (01-12)
         - {day}: Day of month (1-31)
         - {day:02d}: Zero-padded day (01-31)
-        - {client_code}: First 3 letters of client name (uppercase)
-        - {client}: Full client name
+        - {client_code}: Manually defined client code
         - {invoice_number}: Sequential invoice number (starting from 001)
     """
     if invoice_date is None:
         invoice_date = datetime.now()
-
-    # Create client code (first 3 letters, uppercase)
-    client_code = client_name[:3].upper()
 
     # Generate a simple sequential number based on year and month
     # In a real implementation, this would come from a database
@@ -382,7 +388,6 @@ def generate_invoice_number(
         "month": invoice_date.month,
         "day": invoice_date.day,
         "client_code": client_code,
-        "client": client_name,
         "invoice_number": f"{invoice_counter:03d}",
     }
 
@@ -396,6 +401,7 @@ def generate_invoice_number(
 def create_sample_invoice_data(
     client_name: str = "Sample Client",
     client_email: str = "client@example.com",
+    client_code: str = "SAM",
     days_worked: int = 20,
     month_year: str | None = None,
 ) -> Dict:
@@ -405,6 +411,7 @@ def create_sample_invoice_data(
     Args:
         client_name: Name of the client
         client_email: Client's email address
+        client_code: Client's code (e.g., "ACM", "TSS")
         days_worked: Number of days worked
         month_year: Month and year for the invoice (e.g., "October 2024")
 
@@ -414,8 +421,8 @@ def create_sample_invoice_data(
     if not month_year:
         month_year = datetime.now().strftime("%B %Y")
 
-    # Generate invoice number using the new template system
-    invoice_number = generate_invoice_number(client_name)
+    # Generate invoice number using the client code
+    invoice_number = generate_invoice_number(client_code)
 
     return {
         "invoice_number": invoice_number,
@@ -424,6 +431,7 @@ def create_sample_invoice_data(
         "client_info": {
             "name": client_name,
             "email": client_email,
+            "client_code": client_code,
             "address": "Client Company\n123 Business Ave\nCity, State 12345",
         },
         "days_worked": days_worked,

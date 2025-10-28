@@ -100,6 +100,9 @@ class ClientManager:
             "address": client_data.get("address", ""),
             "phone": client_data.get("phone", ""),
             "company": client_data.get("company", client_data["name"]),
+            "client_code": client_data.get(
+                "client_code", client_data["name"][:3].upper()
+            ),
             "notes": client_data.get("notes", ""),
             "created_date": datetime.now().isoformat(),
             "last_invoice_date": None,
@@ -117,6 +120,7 @@ class ClientManager:
             "name": client_data["name"],
             "email": client_data["email"],
             "company": full_client_data["company"],
+            "client_code": full_client_data["client_code"],
             "created_date": full_client_data["created_date"],
             "last_invoice_date": None,
             "total_invoices": 0,
@@ -289,6 +293,7 @@ def create_sample_clients(client_manager: ClientManager):
             "address": "123 Business Ave\nNew York, NY 10001",
             "phone": "+1 (555) 123-4567",
             "company": "Acme Corporation",
+            "client_code": "ACM",
             "notes": "Long-term client, payment terms NET 30",
         },
         {
@@ -297,6 +302,7 @@ def create_sample_clients(client_manager: ClientManager):
             "address": "456 Innovation Drive\nSan Francisco, CA 94107",
             "phone": "+1 (555) 987-6543",
             "company": "TechStart Solutions Inc",
+            "client_code": "TSS",
             "notes": "Startup client, prefers electronic invoices",
         },
         {
@@ -305,6 +311,7 @@ def create_sample_clients(client_manager: ClientManager):
             "address": "789 Corporate Blvd\nChicago, IL 60601",
             "phone": "+1 (555) 246-8135",
             "company": "Global Dynamics Inc",
+            "client_code": "GDI",
             "notes": "Enterprise client, requires detailed project descriptions",
         },
     ]

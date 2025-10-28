@@ -76,7 +76,9 @@ def config():
         print(f"Hours/Day: {cfg.HOURS_PER_DAY}")
         print(f"Currency: {cfg.CURRENCY}")
         print(f"Invoice Template: {cfg.INVOICE_NUMBER_TEMPLATE}")
-        print(f"Invoices Directory: {cfg.INVOICES_DIR}")
+        print(
+            f"Invoices Directory: {cfg.INVOICES_DIR} (organized as year/client_code/)"
+        )
         print(f"Clients Directory: {cfg.CLIENTS_DIR}")
 
         # Show Microsoft API configuration status without exposing credentials
@@ -171,8 +173,7 @@ CURRENCY_SYMBOL=€
 # {month:02d} - Zero-padded month (01-12)
 # {day} - Day of month (1-31)
 # {day:02d} - Zero-padded day (01-31)
-# {client_code} - First 3 letters of client name (uppercase)
-# {client} - Full client name
+# {client_code} - Manually defined client code (e.g., ACM, TSS, GDI)
 # {invoice_number} - Sequential invoice number (001, 002, etc.)
 INVOICE_NUMBER_TEMPLATE=INV-{year}{month:02d}-{client_code}
 
