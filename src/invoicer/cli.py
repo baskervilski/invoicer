@@ -75,6 +75,7 @@ def config():
         print(f"Hourly Rate: {cfg.CURRENCY_SYMBOL}{cfg.HOURLY_RATE}")
         print(f"Hours/Day: {cfg.HOURS_PER_DAY}")
         print(f"Currency: {cfg.CURRENCY}")
+        print(f"Invoice Template: {cfg.INVOICE_NUMBER_TEMPLATE}")
         print(f"Invoices Directory: {cfg.INVOICES_DIR}")
         print(f"Clients Directory: {cfg.CLIENTS_DIR}")
 
@@ -163,6 +164,17 @@ HOURLY_RATE=75.0
 HOURS_PER_DAY=8.0
 CURRENCY=EUR
 CURRENCY_SYMBOL=€
+
+# Invoice Number Template - Available variables:
+# {year} - Full year (e.g., 2024)
+# {month} - Month number (1-12) 
+# {month:02d} - Zero-padded month (01-12)
+# {day} - Day of month (1-31)
+# {day:02d} - Zero-padded day (01-31)
+# {client_code} - First 3 letters of client name (uppercase)
+# {client} - Full client name
+# {invoice_number} - Sequential invoice number (001, 002, etc.)
+INVOICE_NUMBER_TEMPLATE=INV-{year}{month:02d}-{client_code}
 
 # Microsoft Graph API Settings (Required for email)
 # Get these from your Microsoft App Registration

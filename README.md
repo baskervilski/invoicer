@@ -117,6 +117,7 @@ To send emails via Microsoft Graph API, you need to register an application:
    HOURS_PER_DAY=8.0
    CURRENCY=EUR
    CURRENCY_SYMBOL=€
+   INVOICE_NUMBER_TEMPLATE=INV-{year}{month:02d}-{client_code}
 
    # Microsoft Graph API Settings
    MICROSOFT_CLIENT_ID=your-client-id-from-azure
@@ -206,6 +207,28 @@ invoicer/
 **Note**: The `invoices/` and `clients/` directories are created in your current working directory, not within the Python module. This allows you to organize your data separately from the code and run the invoicer from different directories for different projects or businesses.
 
 ## Customization
+
+### Invoice Number Templates
+
+Customize your invoice numbering scheme in the `.env` file:
+
+```env
+# Available template variables:
+# {year} - Full year (e.g., 2024)
+# {month} - Month number (1-12)
+# {month:02d} - Zero-padded month (01-12)
+# {day} - Day of month (1-31)
+# {day:02d} - Zero-padded day (01-31)
+# {client_code} - First 3 letters of client name (uppercase)
+# {client} - Full client name
+# {invoice_number} - Sequential invoice number (001, 002, etc.)
+
+# Examples:
+INVOICE_NUMBER_TEMPLATE=INV-{year}{month:02d}-{client_code}    # INV-202410-ACM
+INVOICE_NUMBER_TEMPLATE={client_code}-{year}-{invoice_number}  # ACM-2024-001
+INVOICE_NUMBER_TEMPLATE={year}-{invoice_number}                # 2024-001
+INVOICE_NUMBER_TEMPLATE={client}-{year}{month:02d}             # Acme Corporation-202410
+```
 
 ### Invoice Styling
 

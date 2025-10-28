@@ -17,6 +17,9 @@ HOURLY_RATE = float(os.getenv("HOURLY_RATE", "75.0"))  # Default €75/hour
 HOURS_PER_DAY = float(os.getenv("HOURS_PER_DAY", "8.0"))  # Default 8 hours/day
 CURRENCY = os.getenv("CURRENCY", "EUR")
 CURRENCY_SYMBOL = os.getenv("CURRENCY_SYMBOL", "€")
+INVOICE_NUMBER_TEMPLATE = os.getenv(
+    "INVOICE_NUMBER_TEMPLATE", "INV-{year}{month:02d}-{client_code}"
+)
 
 # Microsoft Graph API Settings for email
 CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID")

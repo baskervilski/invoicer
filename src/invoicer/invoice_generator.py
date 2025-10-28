@@ -344,8 +344,60 @@ class InvoiceGenerator:
         return elements
 
 
+def generate_invoice_number(
+    client_name: str, invoice_date: datetime | None = None
+) -> str:
+    """
+    Generate invoice number using the configured template
+
+    Args:
+        client_name: Name of the client
+        invoice_date: Date for the invoice (defaults to current date)
+
+    Returns:
+        str: Generated invoice number
+
+    Available template variables:
+        - {year}: Full year (e.g., 2024)
+        - {month}: Month number (1-12)
+        - {month:02d}: Zero-padded month (01-12)
+        - {day}: Day of month (1-31)
+        - {day:02d}: Zero-padded day (01-31)
+        - {client_code}: First 3 letters of client name (uppercase)
+        - {client}: Full client name
+        - {invoice_number}: Sequential invoice number (starting from 001)
+    """
+    if invoice_date is None:
+        invoice_date = datetime.now()
+
+    # Create client code (first 3 letters, uppercase)
+    client_code = client_name[:3].upper()
+
+    # Generate a simple sequential number based on year and month
+    # In a real implementation, this would come from a database
+    invoice_counter = 1  # This could be enhanced to read from a file or database
+
+    template_vars = {
+        "year": invoice_date.year,
+        "month": invoice_date.month,
+        "day": invoice_date.day,
+        "client_code": client_code,
+        "client": client_name,
+        "invoice_number": f"{invoice_counter:03d}",
+    }
+
+    try:
+        return config.INVOICE_NUMBER_TEMPLATE.format(**template_vars)
+    except KeyError:
+        # Fallback to default format if template has invalid variables
+        return f"INV-{invoice_date.strftime('%Y%m')}-{client_code}"
+
+
 def create_sample_invoice_data(
-    client_name: str, client_email: str, days_worked: int, month_year: str | None = None
+    client_name: str = "Sample Client",
+    client_email: str = "client@example.com",
+    days_worked: int = 20,
+    month_year: str | None = None,
 ) -> Dict:
     """
     Create sample invoice data for testing
@@ -362,8 +414,8 @@ def create_sample_invoice_data(
     if not month_year:
         month_year = datetime.now().strftime("%B %Y")
 
-    # Generate invoice number based on current date
-    invoice_number = f"INV-{datetime.now().strftime('%Y%m')}-{client_name[:3].upper()}"
+    # Generate invoice number using the new template system
+    invoice_number = generate_invoice_number(client_name)
 
     return {
         "invoice_number": invoice_number,
@@ -378,6 +430,4 @@ def create_sample_invoice_data(
         "project_description": f"Consulting services for {month_year}",
         "period": month_year,
         "tax_rate": 0.0,  # Set to 0.08 for 8% tax, etc.
-        "payment_terms": "Payment is due within 30 days of invoice date. Late payments may incur a 1.5% monthly service charge.",
-        "thank_you_note": f"Thank you for your business! For questions about this invoice, please contact us at {config.COMPANY_EMAIL}.",
     }
