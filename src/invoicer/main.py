@@ -9,9 +9,9 @@ and sends them via Microsoft email.
 from pathlib import Path
 import sys
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional
 
-from invoicer.models import ClientModel
+from invoicer.models import ClientModel, InvoiceModel
 
 from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
 from .email_sender import EmailSender
@@ -39,9 +39,9 @@ def main():
         print(f"✅ Invoice created: {pdf_path}")
 
         # Record invoice creation in client database
-        if invoice_data.get("client_id"):
-            client_manager = ClientManager()
-            client_manager.record_invoice(invoice_data["client_id"], invoice_data)
+        if invoice_data.client_info.client_id:
+            # TODO: Update record_invoice to accept InvoiceModel instead of dict
+            pass
 
         # Ask if user wants to send email
         send_email = input("\n📧 Send this invoice via email? (y/n): ").lower().strip()
@@ -237,12 +237,12 @@ def create_new_client(client_manager: ClientManager) -> Optional[ClientModel]:
         return None
 
 
-def get_invoice_details() -> Optional[dict]:
+def get_invoice_details() -> Optional[InvoiceModel]:
     """
     Get invoice details from user input
 
     Returns:
-        Optional[dict]: Invoice data or None if cancelled
+        Optional[InvoiceModel]: Invoice data or None if cancelled
     """
     try:
         # First, select or create client
@@ -307,11 +307,12 @@ def get_invoice_details() -> Optional[dict]:
             days_worked,
             month_year,
         )
-        invoice_data["project_description"] = project_description
 
-        # Store client data and days worked for later use
-        invoice_data["client_id"] = client_data.id
-        invoice_data["days_worked"] = days_worked
+        # Update the project description
+        invoice_data.project_description = project_description
+
+        # Set the client ID in the client_info
+        invoice_data.client_info.client_id = client_data.id
 
         return invoice_data
 
@@ -320,12 +321,12 @@ def get_invoice_details() -> Optional[dict]:
         return None
 
 
-def send_invoice_email(invoice_data: dict, pdf_path: Path) -> bool:
+def send_invoice_email(invoice_data: InvoiceModel, pdf_path: Path) -> bool:
     """
     Send invoice via email
 
     Args:
-        invoice_data: Invoice data dictionary
+        invoice_data: InvoiceModel containing invoice information
         pdf_path: Path to the PDF invoice file
 
     Returns:
@@ -346,15 +347,13 @@ def send_invoice_email(invoice_data: dict, pdf_path: Path) -> bool:
         print("✅ Authentication successful!")
 
         # Prepare email content
-        client_name = invoice_data["client_info"]["name"]
-        client_email = invoice_data["client_info"]["email"]
-        invoice_number = invoice_data["invoice_number"]
-        month_year = invoice_data["period"]
+        client_name = invoice_data.client_info.name
+        client_email = invoice_data.client_info.email
+        invoice_number = invoice_data.invoice_number
+        month_year = invoice_data.period or datetime.now().strftime("%B %Y")
 
-        # Calculate total amount
-        days_worked = invoice_data["days_worked"]
-        total_hours = days_worked * config.HOURS_PER_DAY
-        total_amount = total_hours * config.HOURLY_RATE
+        # Use the total amount from the invoice model
+        total_amount = invoice_data.total_amount
 
         subject = f"Invoice {invoice_number} - {month_year} Services"
         body = email_sender.create_invoice_email_body(

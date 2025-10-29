@@ -6,7 +6,7 @@ This module handles the creation of professional PDF invoices using ReportLab.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import List
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -17,100 +17,6 @@ from reportlab.lib.enums import TA_RIGHT, TA_LEFT
 
 from invoicer import config
 from invoicer.models import InvoiceModel, InvoiceItemModel, InvoiceClientInfoModel
-
-
-def invoice_model_to_dict(invoice_model: InvoiceModel) -> Dict:
-    """Convert InvoiceModel to dictionary format for backwards compatibility"""
-    return {
-        "invoice_number": invoice_model.invoice_number,
-        "invoice_date": invoice_model.invoice_date.strftime("%B %d, %Y"),
-        "due_date": invoice_model.due_date,
-        "client_info": {
-            "name": invoice_model.client_info.name,
-            "email": invoice_model.client_info.email,
-            "client_code": invoice_model.client_info.client_code,
-            "address": invoice_model.client_info.address,
-        },
-        "client_id": invoice_model.client_info.client_id,
-        "days_worked": invoice_model.days_worked or 0,
-        "project_description": invoice_model.project_description or "",
-        "period": invoice_model.period or "",
-        "tax_rate": invoice_model.tax_rate,
-        "payment_terms": invoice_model.payment_terms,
-        "thank_you_note": invoice_model.thank_you_note
-        or f"Thank you for your business! For questions about this invoice, please contact us at {config.COMPANY_EMAIL} or {config.COMPANY_PHONE}.",
-    }
-
-
-def dict_to_invoice_model(invoice_dict: Dict) -> InvoiceModel:
-    """Convert dictionary to InvoiceModel for type safety and validation"""
-    client_info_dict = invoice_dict.get("client_info", {})
-
-    # Calculate financial details from days_worked if needed
-    days_worked = invoice_dict.get("days_worked", 0)
-    hours_per_day = config.HOURS_PER_DAY
-    hourly_rate = config.HOURLY_RATE
-    total_hours = days_worked * hours_per_day
-    subtotal = total_hours * hourly_rate
-    tax_rate = invoice_dict.get("tax_rate", 0.0)
-    tax_amount = subtotal * tax_rate
-    total_amount = subtotal + tax_amount
-
-    # Create line item from legacy days_worked approach
-    line_items = []
-    if days_worked > 0:
-        line_item = InvoiceItemModel(
-            description=invoice_dict.get(
-                "project_description",
-                f"Consulting services for {invoice_dict.get('period', 'this month')}",
-            ),
-            quantity=float(days_worked),
-            unit_type="days",
-            rate=hourly_rate * hours_per_day,  # Daily rate
-            amount=subtotal,
-        )
-        line_items.append(line_item)
-
-    client_info = InvoiceClientInfoModel(
-        name=client_info_dict.get("name", "Unknown Client"),
-        email=client_info_dict.get("email", "client@example.com"),
-        client_code=client_info_dict.get("client_code", "UNK"),
-        address=client_info_dict.get("address", ""),
-        client_id=invoice_dict.get("client_id"),
-    )
-
-    invoice_date = datetime.now()
-    if "invoice_date" in invoice_dict:
-        # Try to parse the date if it's a string
-        date_str = invoice_dict["invoice_date"]
-        if isinstance(date_str, str):
-            try:
-                invoice_date = datetime.strptime(date_str, "%B %d, %Y")
-            except ValueError:
-                # Fallback to current date
-                invoice_date = datetime.now()
-        elif isinstance(date_str, datetime):
-            invoice_date = date_str
-
-    return InvoiceModel(
-        invoice_number=invoice_dict.get("invoice_number", "INV-001"),
-        invoice_date=invoice_date,
-        due_date=invoice_dict.get("due_date", "Net 30 days"),
-        client_info=client_info,
-        line_items=line_items,
-        days_worked=days_worked,
-        project_description=invoice_dict.get("project_description"),
-        period=invoice_dict.get("period"),
-        subtotal=subtotal,
-        tax_rate=tax_rate,
-        tax_amount=tax_amount,
-        total_amount=total_amount,
-        payment_terms=invoice_dict.get(
-            "payment_terms",
-            "Payment is due within 30 days of invoice date. Late payments may incur additional charges.",
-        ),
-        thank_you_note=invoice_dict.get("thank_you_note"),
-    )
 
 
 class InvoiceGenerator:
@@ -166,25 +72,21 @@ class InvoiceGenerator:
             )
         )
 
-    def create_invoice(self, invoice_data: Union[Dict, InvoiceModel]) -> Path:
+    def create_invoice(self, invoice_data: InvoiceModel) -> Path:
         """
         Create a PDF invoice and return the file path
 
         Args:
-            invoice_data: Dictionary or InvoiceModel containing invoice information
+            invoice_data: InvoiceModel containing invoice information
 
         Returns:
             str: Path to the generated PDF file
         """
-        # Convert InvoiceModel to dict if needed for backwards compatibility with existing code
-        if isinstance(invoice_data, InvoiceModel):
-            invoice_data = invoice_model_to_dict(invoice_data)
 
         # Get client info and invoice details
-        invoice_number = invoice_data.get("invoice_number", "INV-001")
-        client_info = invoice_data.get("client_info", {})
-        client_code = client_info.get("client_code", "CLIENT")
-        invoice_date = datetime.now()
+        invoice_number = invoice_data.invoice_number
+        client_code = invoice_data.client_info.client_code
+        invoice_date = invoice_data.invoice_date
         year = invoice_date.year
 
         # Create year/client directory structure
@@ -223,7 +125,7 @@ class InvoiceGenerator:
 
         return filepath
 
-    def _build_header(self, invoice_data: Dict) -> List:
+    def _build_header(self, invoice_data: InvoiceModel) -> List:
         """Build the invoice header with company info and invoice title"""
         elements = []
 
@@ -239,9 +141,9 @@ class InvoiceGenerator:
                     self.styles["Address"],
                 ),
                 Paragraph(
-                    f"Invoice #: {invoice_data.get('invoice_number', 'INV-001')}<br/>"
-                    f"Date: {invoice_data.get('invoice_date', datetime.now().strftime('%B %d, %Y'))}<br/>"
-                    f"Due Date: {invoice_data.get('due_date', 'Upon Receipt')}",
+                    f"Invoice #: {invoice_data.invoice_number}<br/>"
+                    f"Date: {invoice_data.invoice_date.strftime('%B %d, %Y')}<br/>"
+                    f"Due Date: {invoice_data.due_date}",
                     self.styles["RightAlign"],
                 ),
             ],
@@ -265,21 +167,21 @@ class InvoiceGenerator:
 
         return elements
 
-    def _build_invoice_details(self, invoice_data: Dict) -> List:
+    def _build_invoice_details(self, invoice_data: InvoiceModel) -> List:
         """Build the bill to and invoice details section"""
         elements = []
 
         # Bill To section
-        bill_to = invoice_data.get("client_info", {})
-        client_address = bill_to.get("address", "Client Address\nCity, State ZIP")
+        client_info = invoice_data.client_info
+        client_address = client_info.address or "Client Address\nCity, State ZIP"
 
         details_data = [
             [Paragraph("<b>Bill To:</b>", self.styles["Normal"]), ""],
             [
                 Paragraph(
-                    f"{bill_to.get('name', 'Client Name')}<br/>"
+                    f"{client_info.name}<br/>"
                     f"{client_address.replace(chr(10), '<br/>')}<br/>"
-                    f"Email: {bill_to.get('email', 'client@example.com')}",
+                    f"Email: {client_info.email}",
                     self.styles["Address"],
                 ),
                 "",
@@ -300,23 +202,22 @@ class InvoiceGenerator:
 
         return elements
 
-    def _build_line_items(self, invoice_data: Dict) -> List:
+    def _build_line_items(self, invoice_data: InvoiceModel) -> List:
         """Build the line items table"""
         elements = []
 
         # Calculate values
-        days_worked = invoice_data.get("days_worked", 0)
+        days_worked = invoice_data.days_worked or 0
         hours_per_day = config.HOURS_PER_DAY
         hourly_rate = config.HOURLY_RATE
         total_hours = days_worked * hours_per_day
         subtotal = total_hours * hourly_rate
 
         # Project description
-        project_description = invoice_data.get(
-            "project_description",
-            f"Consulting services for {invoice_data.get('period', 'this month')}",
+        project_description = (
+            invoice_data.project_description
+            or f"Consulting services for {invoice_data.period or 'this month'}"
         )
-
         # Table headers
         line_items_data = [
             ["Description", "Days", "Hours/Day", "Rate/Hour", "Total Hours", "Amount"]
@@ -379,17 +280,15 @@ class InvoiceGenerator:
 
         return elements
 
-    def _build_totals(self, invoice_data: Dict) -> List:
+    def _build_totals(self, invoice_data: InvoiceModel) -> List:
         """Build the totals section"""
         elements = []
 
-        # Calculate totals
-        days_worked = invoice_data.get("days_worked", 0)
-        total_hours = days_worked * config.HOURS_PER_DAY
-        subtotal = total_hours * config.HOURLY_RATE
-        tax_rate = invoice_data.get("tax_rate", 0.0)
-        tax_amount = subtotal * tax_rate
-        total_amount = subtotal + tax_amount
+        # Use the calculated totals from the InvoiceModel
+        subtotal = invoice_data.subtotal
+        tax_rate = invoice_data.tax_rate
+        tax_amount = invoice_data.tax_amount
+        total_amount = invoice_data.total_amount
 
         # Build totals table
         totals_data = [["", "Subtotal:", f"{config.CURRENCY_SYMBOL}{subtotal:,.2f}"]]
@@ -426,26 +325,21 @@ class InvoiceGenerator:
 
         return elements
 
-    def _build_footer(self, invoice_data: Dict) -> List:
+    def _build_footer(self, invoice_data: InvoiceModel) -> List:
         """Build the invoice footer with payment terms and contact info"""
         elements = []
 
         # Payment terms
-        payment_terms = invoice_data.get(
-            "payment_terms",
-            "Payment is due within 30 days of invoice date. "
-            "Late payments may incur additional charges.",
-        )
+        payment_terms = invoice_data.payment_terms
 
         elements.append(Paragraph("<b>Payment Terms:</b>", self.styles["Normal"]))
         elements.append(Paragraph(payment_terms, self.styles["Normal"]))
         elements.append(Spacer(1, 20))
 
         # Thank you note
-        thank_you = invoice_data.get(
-            "thank_you_note",
+        thank_you = invoice_data.thank_you_note or (
             "Thank you for your business! For questions about this invoice, "
-            f"please contact us at {config.COMPANY_EMAIL} or {config.COMPANY_PHONE}.",
+            f"please contact us at {config.COMPANY_EMAIL} or {config.COMPANY_PHONE}."
         )
 
         elements.append(Paragraph(thank_you, self.styles["Normal"]))
@@ -503,8 +397,7 @@ def create_sample_invoice_data(
     client_code: str = "SAM",
     days_worked: int = 20,
     month_year: str | None = None,
-    return_model: bool = False,
-) -> Union[Dict, InvoiceModel]:
+) -> InvoiceModel:
     """
     Create sample invoice data for testing
 
@@ -514,10 +407,9 @@ def create_sample_invoice_data(
         client_code: Client's code (e.g., "ACM", "TSS")
         days_worked: Number of days worked
         month_year: Month and year for the invoice (e.g., "October 2024")
-        return_model: If True, return InvoiceModel; if False, return Dict
 
     Returns:
-        Dict or InvoiceModel: Invoice data
+        InvoiceModel: Invoice data
     """
     if not month_year:
         month_year = datetime.now().strftime("%B %Y")
@@ -525,24 +417,51 @@ def create_sample_invoice_data(
     # Generate invoice number using the client code
     invoice_number = generate_invoice_number(client_code)
 
-    # Create the dictionary format first
-    invoice_dict = {
-        "invoice_number": invoice_number,
-        "invoice_date": datetime.now().strftime("%B %d, %Y"),
-        "due_date": "Net 30 days",
-        "client_info": {
-            "name": client_name,
-            "email": client_email,
-            "client_code": client_code,
-            "address": "Client Company\n123 Business Ave\nCity, State 12345",
-        },
-        "days_worked": days_worked,
-        "project_description": f"Consulting services for {month_year}",
-        "period": month_year,
-        "tax_rate": 0.0,  # Set to 0.08 for 8% tax, etc.
-    }
+    # Calculate financial details
+    hours_per_day = config.HOURS_PER_DAY
+    hourly_rate = config.HOURLY_RATE
+    total_hours = days_worked * hours_per_day
+    subtotal = total_hours * hourly_rate
+    tax_rate = 0.0  # Set to 0.08 for 8% tax, etc.
+    tax_amount = subtotal * tax_rate
+    total_amount = subtotal + tax_amount
 
-    if return_model:
-        return dict_to_invoice_model(invoice_dict)
-    else:
-        return invoice_dict
+    # Create client info
+    client_info = InvoiceClientInfoModel(
+        name=client_name,
+        email=client_email,
+        client_code=client_code,
+        address="Client Company\n123 Business Ave\nCity, State 12345",
+        client_id=None,
+    )
+
+    # Create line item
+    project_description = f"Consulting services for {month_year}"
+    line_items = []
+    if days_worked > 0:
+        line_item = InvoiceItemModel(
+            description=project_description,
+            quantity=float(days_worked),
+            unit_type="days",
+            rate=hourly_rate * hours_per_day,  # Daily rate
+            amount=subtotal,
+        )
+        line_items.append(line_item)
+
+    # Create invoice model
+    return InvoiceModel(
+        invoice_number=invoice_number,
+        invoice_date=datetime.now(),
+        due_date="Net 30 days",
+        client_info=client_info,
+        line_items=line_items,
+        days_worked=days_worked,
+        project_description=project_description,
+        period=month_year,
+        subtotal=subtotal,
+        tax_rate=tax_rate,
+        tax_amount=tax_amount,
+        total_amount=total_amount,
+        payment_terms="Payment is due within 30 days of invoice date. Late payments may incur additional charges.",
+        thank_you_note=None,
+    )

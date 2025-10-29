@@ -12,15 +12,15 @@ def generate_samples():
     print("📄 Generating sample invoices for different scenarios...")
 
     scenarios = [
-        ("Small Project", "startup@example.com", 5, "October 2024"),
-        ("Medium Project", "corp@example.com", 15, "October 2024"),
-        ("Large Project", "enterprise@example.com", 22, "October 2024"),
+        ("Small Project", "startup@example.com", 5, "C01", "October 2024"),
+        ("Medium Project", "corp@example.com", 15, "C02", "October 2024"),
+        ("Large Project", "enterprise@example.com", 22, "C03", "October 2024"),
     ]
 
     generator = InvoiceGenerator()
 
-    for name, email, days, month in scenarios:
-        data = create_sample_invoice_data(name, email, days, month)
+    for name, email, days, client_code, month in scenarios:
+        data = create_sample_invoice_data(name, email, client_code, days, month)
         path = generator.create_invoice(data)
         print(f"✅ {name}: {Path(path).name}")
 
