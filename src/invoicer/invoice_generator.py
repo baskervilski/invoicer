@@ -15,12 +15,15 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.platypus.flowables import HRFlowable
 from reportlab.lib.enums import TA_RIGHT, TA_LEFT
 
-from invoicer import config
-from invoicer.models import InvoiceModel, InvoiceItemModel, InvoiceClientInfoModel
+from invoicer.config import InvoicerSettings
+
+# from . import config
+from .models import InvoiceModel, InvoiceItemModel, InvoiceClientInfoModel
 
 
 class InvoiceGenerator:
-    def __init__(self, page_size=A4):
+    def __init__(self, settings: InvoicerSettings, page_size=A4):
+        self.settings = settings
         self.page_size = page_size
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
@@ -90,7 +93,7 @@ class InvoiceGenerator:
         year = invoice_date.year
 
         # Create year/client directory structure
-        year_dir = Path(config.INVOICES_DIR) / str(year)
+        year_dir = Path(self.settings.invoices_dir) / str(year)
         client_dir = year_dir / client_code
         client_dir.mkdir(parents=True, exist_ok=True)
 
@@ -132,12 +135,12 @@ class InvoiceGenerator:
         # Create a table for header layout
         header_data = [
             [
-                Paragraph(config.COMPANY_NAME, self.styles["CompanyHeader"]),
+                Paragraph(self.settings.company_name, self.styles["CompanyHeader"]),
                 Paragraph("INVOICE", self.styles["InvoiceTitle"]),
             ],
             [
                 Paragraph(
-                    config.COMPANY_ADDRESS.replace("\n", "<br/>"),
+                    self.settings.company_address.replace("\n", "<br/>"),
                     self.styles["Address"],
                 ),
                 Paragraph(
@@ -208,8 +211,8 @@ class InvoiceGenerator:
 
         # Calculate values
         days_worked = invoice_data.days_worked or 0
-        hours_per_day = config.HOURS_PER_DAY
-        hourly_rate = config.HOURLY_RATE
+        hours_per_day = self.settings.hours_per_day
+        hourly_rate = self.settings.hourly_rate
         total_hours = days_worked * hours_per_day
         subtotal = total_hours * hourly_rate
 
@@ -229,9 +232,9 @@ class InvoiceGenerator:
                 project_description,
                 f"{days_worked:,}",
                 f"{hours_per_day:.1f}",
-                f"{config.CURRENCY_SYMBOL}{hourly_rate:,.2f}",
+                f"{self.settings.currency_symbol}{hourly_rate:,.2f}",
                 f"{total_hours:,.1f}",
-                f"{config.CURRENCY_SYMBOL}{subtotal:,.2f}",
+                f"{self.settings.currency_symbol}{subtotal:,.2f}",
             ]
         )
 
@@ -291,19 +294,25 @@ class InvoiceGenerator:
         total_amount = invoice_data.total_amount
 
         # Build totals table
-        totals_data = [["", "Subtotal:", f"{config.CURRENCY_SYMBOL}{subtotal:,.2f}"]]
+        totals_data = [
+            ["", "Subtotal:", f"{self.settings.currency_symbol}{subtotal:,.2f}"]
+        ]
 
         if tax_rate > 0:
             totals_data.append(
                 [
                     "",
                     f"Tax ({tax_rate * 100:.1f}%):",
-                    f"{config.CURRENCY_SYMBOL}{tax_amount:,.2f}",
+                    f"{self.settings.currency_symbol}{tax_amount:,.2f}",
                 ]
             )
 
         totals_data.append(
-            ["", "Total Amount Due:", f"{config.CURRENCY_SYMBOL}{total_amount:,.2f}"]
+            [
+                "",
+                "Total Amount Due:",
+                f"{self.settings.currency_symbol}{total_amount:,.2f}",
+            ]
         )
 
         totals_table = Table(totals_data, colWidths=[4 * inch, 1.5 * inch, 1 * inch])
@@ -339,7 +348,7 @@ class InvoiceGenerator:
         # Thank you note
         thank_you = invoice_data.thank_you_note or (
             "Thank you for your business! For questions about this invoice, "
-            f"please contact us at {config.COMPANY_EMAIL} or {config.COMPANY_PHONE}."
+            f"please contact us at {self.settings.company_email} or {self.settings.company_phone}."
         )
 
         elements.append(Paragraph(thank_you, self.styles["Normal"]))
@@ -348,7 +357,7 @@ class InvoiceGenerator:
 
 
 def generate_invoice_number(
-    client_code: str, invoice_date: datetime | None = None
+    invoice_number_template, client_code: str, invoice_date: datetime | None = None
 ) -> str:
     """
     Generate invoice number using the configured template
@@ -385,13 +394,14 @@ def generate_invoice_number(
     }
 
     try:
-        return config.INVOICE_NUMBER_TEMPLATE.format(**template_vars)
+        return invoice_number_template.format(**template_vars)
     except KeyError:
         # Fallback to default format if template has invalid variables
         return f"INV-{invoice_date.strftime('%Y%m')}-{client_code}"
 
 
 def create_sample_invoice_data(
+    settings: InvoicerSettings,
     client_name: str = "Sample Client",
     client_email: str = "client@example.com",
     client_code: str = "SAM",
@@ -415,11 +425,15 @@ def create_sample_invoice_data(
         month_year = datetime.now().strftime("%B %Y")
 
     # Generate invoice number using the client code
-    invoice_number = generate_invoice_number(client_code)
+    invoice_number = generate_invoice_number(
+        settings.invoice_number_template, client_code
+    )
+
+    assert isinstance(invoice_number, str), f"Expected str, got {type(invoice_number)}"
 
     # Calculate financial details
-    hours_per_day = config.HOURS_PER_DAY
-    hourly_rate = config.HOURLY_RATE
+    hours_per_day = settings.hours_per_day
+    hourly_rate = settings.hourly_rate
     total_hours = days_worked * hours_per_day
     subtotal = total_hours * hourly_rate
     tax_rate = 0.0  # Set to 0.08 for 8% tax, etc.

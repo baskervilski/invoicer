@@ -1,70 +1,79 @@
-#!/usr/bin/env python3
 """
-Test script for invoice generation without email functionality
+Test PDF invoice generation functionality.
 """
 
 from pathlib import Path
-import sys
 from invoicer.invoice_generator import InvoiceGenerator, create_sample_invoice_data
 
 
-def test_pdf_generation():
-    """Test PDF invoice generation"""
-    print("🧪 Testing PDF invoice generation...")
+def test_pdf_generation(test_generator: InvoiceGenerator):
+    """Test that PDF invoices can be generated successfully."""
+    # Create sample invoice data using InvoiceModel
+    invoice_data = create_sample_invoice_data(
+        settings=test_generator.settings,
+        client_name="Test Client Corp",
+        client_email="test@example.com",
+        client_code="TST",
+        days_worked=10,
+        month_year="October 2024",
+    )
 
-    try:
-        # Create sample invoice data
+    # Verify we have valid InvoiceModel data
+    assert invoice_data.client_info.name == "Test Client Corp"
+    assert invoice_data.days_worked == 10
+    assert invoice_data.invoice_number is not None
+    assert invoice_data.subtotal > 0
+    assert invoice_data.total_amount > 0
+
+    # Generate PDF
+    pdf_path = test_generator.create_invoice(invoice_data)
+
+    # Verify PDF was created
+    assert isinstance(pdf_path, Path)
+    assert pdf_path.exists()
+    assert pdf_path.suffix == ".pdf"
+
+    # Verify file has content
+    file_size = pdf_path.stat().st_size
+    assert file_size > 1000  # Should be a reasonable size for a PDF
+
+
+def test_pdf_generation_with_tax(test_generator: InvoiceGenerator):
+    """Test PDF generation with tax calculations."""
+    # Create invoice data with tax
+    invoice_data = create_sample_invoice_data(
+        settings=test_generator.settings,
+        client_name="Tax Test Client",
+        client_code="TAX",
+        days_worked=5,
+    )
+
+    # Manually set tax for testing
+    invoice_data.tax_rate = 0.08
+    invoice_data.tax_amount = invoice_data.subtotal * 0.08
+    invoice_data.total_amount = invoice_data.subtotal + invoice_data.tax_amount
+
+    # Generate PDF
+    pdf_path = test_generator.create_invoice(invoice_data)
+
+    # Verify PDF was created
+    assert pdf_path.exists()
+    assert pdf_path.suffix == ".pdf"
+
+
+def test_pdf_generation_different_clients(test_generator: InvoiceGenerator):
+    """Test PDF generation for different client codes."""
+    client_codes = ["ABC", "XYZ", "DEF"]
+
+    for code in client_codes:
         invoice_data = create_sample_invoice_data(
-            client_name="Test Client Corp",
-            client_email="test@example.com",
-            days_worked=10,
-            month_year="October 2024",
+            settings=test_generator.settings,
+            client_name=f"Client {code}",
+            client_code=code,
+            days_worked=8,
         )
 
-        print("📋 Test Invoice Data:")
-        print(f"   Client: {invoice_data['client_info']['name']}")
-        print(f"   Days worked: {invoice_data['days_worked']}")
-        print(f"   Invoice number: {invoice_data['invoice_number']}")
+        pdf_path = test_generator.create_invoice(invoice_data)
 
-        # Generate PDF
-        generator = InvoiceGenerator()
-        pdf_path = generator.create_invoice(invoice_data)
-
-        pdf_path_obj = Path(pdf_path)
-        if pdf_path_obj.exists():
-            file_size = pdf_path_obj.stat().st_size
-            print("✅ PDF generated successfully!")
-            print(f"   File: {pdf_path}")
-            print(f"   Size: {file_size} bytes")
-            return True
-        else:
-            print("❌ PDF file was not created")
-            return False
-
-    except Exception as e:
-        print(f"❌ Error generating PDF: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return False
-
-
-def main():
-    """Main test function"""
-    print("=== Invoice Generator Test ===\n")
-
-    success = test_pdf_generation()
-
-    if success:
-        print("\n✅ Test completed successfully!")
-        print("The invoice generator is working correctly.")
-    else:
-        print("\n❌ Test failed!")
-        print("Please check the error messages above.")
-        return 1
-
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+        assert pdf_path.exists()
+        assert code in str(pdf_path)  # Client code should be in path

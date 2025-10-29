@@ -16,7 +16,7 @@ from invoicer.models import ClientModel, InvoiceModel
 from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
 from .email_sender import EmailSender
 from .client_manager import ClientManager, create_sample_clients
-from . import config
+from .config import settings
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
 
         # Generate PDF invoice
         print("\n📄 Generating PDF invoice...")
-        generator = InvoiceGenerator()
+        generator = InvoiceGenerator(settings=settings)
         pdf_path = generator.create_invoice(invoice_data)
         print(f"✅ Invoice created: {pdf_path}")
 
@@ -280,8 +280,8 @@ def get_invoice_details() -> Optional[InvoiceModel]:
             project_description = default_description
 
         # Calculate totals for display
-        total_hours = days_worked * config.HOURS_PER_DAY
-        subtotal = total_hours * config.HOURLY_RATE
+        total_hours = days_worked * settings.hours_per_day
+        subtotal = total_hours * settings.hourly_rate
 
         # Display summary
         print("\n📋 Invoice Summary:")
@@ -289,10 +289,10 @@ def get_invoice_details() -> Optional[InvoiceModel]:
         print(f"   Email: {client_data.email}")
         print(f"   Period: {month_year}")
         print(f"   Days worked: {days_worked:,}")
-        print(f"   Hours per day: {config.HOURS_PER_DAY:,.1f}")
-        print(f"   Hourly rate: {config.CURRENCY_SYMBOL}{config.HOURLY_RATE:,.2f}")
+        print(f"   Hours per day: {settings.hours_per_day:,.1f}")
+        print(f"   Hourly rate: {settings.currency_symbol}{settings.hourly_rate:,.2f}")
         print(f"   Total hours: {total_hours:,.1f}")
-        print(f"   Total amount: {config.CURRENCY_SYMBOL}{subtotal:,.2f}")
+        print(f"   Total amount: {settings.currency_symbol}{subtotal:,.2f}")
 
         # Confirm
         confirm = input("\nProceed with invoice creation? (y/n): ").lower().strip()
@@ -301,11 +301,12 @@ def get_invoice_details() -> Optional[InvoiceModel]:
 
         # Create invoice data
         invoice_data = create_sample_invoice_data(
-            client_data.name,
-            client_data.email,
-            client_data.client_code,
-            days_worked,
-            month_year,
+            settings=settings,
+            client_name=client_data.name,
+            client_email=client_data.email,
+            client_code=client_data.client_code,
+            days_worked=days_worked,
+            month_year=month_year,
         )
 
         # Update the project description
@@ -359,7 +360,7 @@ def send_invoice_email(invoice_data: InvoiceModel, pdf_path: Path) -> bool:
         body = email_sender.create_invoice_email_body(
             client_name,
             invoice_number,
-            f"{config.CURRENCY_SYMBOL}{total_amount:,.2f}",
+            f"{settings.currency_symbol}{total_amount:,.2f}",
             month_year,
         )
 
@@ -393,11 +394,11 @@ def setup_environment():
     # Check required configurations
     missing_configs = []
 
-    if not config.CLIENT_ID:
+    if not settings.microsoft_client_id:
         missing_configs.append("MICROSOFT_CLIENT_ID")
-    if not config.CLIENT_SECRET:
+    if not settings.microsoft_client_secret:
         missing_configs.append("MICROSOFT_CLIENT_SECRET")
-    if not config.TENANT_ID:
+    if not settings.microsoft_tenant_id:
         missing_configs.append("MICROSOFT_TENANT_ID")
 
     if missing_configs:
