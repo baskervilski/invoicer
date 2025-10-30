@@ -62,10 +62,9 @@ def test_send_invoice_email_send_failure(mock_email_sender_class, sample_invoice
     mock_sender.send_email.assert_called_once()
 
 
-@patch("invoicer.main.ClientManager")
 @patch("builtins.input")
-def test_create_new_client_basic(mock_input, mock_client_manager_class, temp_dir):
-    """Test basic client creation flow."""
+def test_create_new_client_basic(mock_input, temp_dir):
+    """Test basic client creation flow using shared utility."""
     # Mock inputs
     mock_input.side_effect = [
         "Test Client",  # name
@@ -83,7 +82,6 @@ def test_create_new_client_basic(mock_input, mock_client_manager_class, temp_dir
     mock_manager.get_client.return_value = MagicMock(
         id="test_client_id", name="Test Client", email="test@example.com"
     )
-    mock_client_manager_class.return_value = mock_manager
 
     from invoicer.main import create_new_client
 
@@ -96,7 +94,7 @@ def test_create_new_client_basic(mock_input, mock_client_manager_class, temp_dir
 
 @patch("builtins.input")
 def test_create_new_client_missing_required_fields(mock_input):
-    """Test client creation with missing required fields."""
+    """Test client creation with missing required fields using shared utility."""
     # Mock inputs with empty name
     mock_input.side_effect = ["", "test@example.com"]
 

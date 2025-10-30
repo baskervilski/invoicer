@@ -7,6 +7,7 @@ This tool allows you to manage client data from the command line.
 
 import typer
 from .client_manager import ClientManager
+from .client_utils import create_client_interactive
 
 app = typer.Typer(
     name="client-cli",
@@ -41,49 +42,13 @@ def list_clients():
 def add():
     """Add a new client (interactive)"""
     client_manager = ClientManager()
-    print("\n📝 Add New Client")
-    print("=" * 30)
 
-    try:
-        name = input("Client/Company name: ").strip()
-        if not name:
-            print("Client name is required.")
-            return
+    created_client = create_client_interactive(client_manager, "Add New Client")
 
-        email = input("Email address: ").strip()
-        if not email:
-            print("Email address is required.")
-            return
-
-        company = input(f"Company name (default: {name}): ").strip()
-        if not company:
-            company = name
-
-        # Client code - required field for invoice organization
-        default_code = name[:3].upper()
-        client_code = input(f"Client code (default: {default_code}): ").strip()
-        if not client_code:
-            client_code = default_code
-
-        address = input("Address (optional): ").strip()
-        phone = input("Phone (optional): ").strip()
-        notes = input("Notes (optional): ").strip()
-
-        client_data = {
-            "name": name,
-            "email": email,
-            "company": company,
-            "client_code": client_code,
-            "address": address,
-            "phone": phone,
-            "notes": notes,
-        }
-
-        client_id = client_manager.add_client(client_data)
-        print(f"\n✅ Client '{name}' created with ID: {client_id}")
-
-    except Exception as e:
-        print(f"Error creating client: {e}")
+    if created_client:
+        print(f"Client created with ID: {created_client.id}")
+    else:
+        print("Client creation cancelled or failed.")
 
 
 @app.command()
@@ -132,25 +97,64 @@ def show(client_id: str):
 
 
 @app.command()
-def delete(client_id: str):
-    """Delete a client"""
+def delete(client_ids: str):
+    """Delete one or more clients (provide comma-separated list of IDs)"""
     client_manager = ClientManager()
-    client = client_manager.get_client(client_id)
 
-    if not client:
-        print(f"Client with ID '{client_id}' not found.")
+    # Parse client IDs - handle both single ID and comma-separated list
+    id_list = [id_str.strip() for id_str in client_ids.split(",") if id_str.strip()]
+
+    if not id_list:
+        print("❌ No client IDs provided.")
         return
 
-    print(f"⚠️  Are you sure you want to delete client '{client.name}'?")
+    # Validate all client IDs exist and get client info
+    clients_to_delete = []
+    missing_ids = []
+
+    for client_id in id_list:
+        client = client_manager.get_client(client_id)
+        if client:
+            clients_to_delete.append(client)
+        else:
+            missing_ids.append(client_id)
+
+    # Report missing clients
+    if missing_ids:
+        print(f"⚠️  Client(s) not found: {', '.join(missing_ids)}")
+        if not clients_to_delete:
+            return
+
+    # Show clients to be deleted
+    if len(clients_to_delete) == 1:
+        print(
+            f"⚠️  Are you sure you want to delete client '{clients_to_delete[0].name}'?"
+        )
+    else:
+        print(f"⚠️  Are you sure you want to delete {len(clients_to_delete)} clients?")
+        for client in clients_to_delete:
+            print(f"   - {client.name} ({client.id})")
+
     confirm = (
         input("This action cannot be undone. Type 'yes' to confirm: ").strip().lower()
     )
 
     if confirm == "yes":
-        if client_manager.delete_client(client_id):
-            print(f"✅ Client '{client.name}' deleted successfully.")
-        else:
-            print("❌ Failed to delete client.")
+        successful_deletions = 0
+        failed_deletions = []
+
+        for client in clients_to_delete:
+            if client_manager.delete_client(client.id):
+                print(f"✅ Client '{client.name}' deleted successfully.")
+                successful_deletions += 1
+            else:
+                print(f"❌ Failed to delete client '{client.name}'.")
+                failed_deletions.append(client.name)
+
+        # Summary
+        print(f"\nSummary: {successful_deletions} client(s) deleted successfully.")
+        if failed_deletions:
+            print(f"Failed to delete: {', '.join(failed_deletions)}")
     else:
         print("Deletion cancelled.")
 

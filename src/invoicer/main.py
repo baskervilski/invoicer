@@ -14,6 +14,7 @@ from typing import Optional
 from invoicer.models import ClientModel, InvoiceModel
 
 from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from .client_utils import create_client_interactive
 from .email_sender import EmailSender
 from .client_manager import ClientManager, create_sample_clients
 from .config import settings
@@ -184,57 +185,7 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[ClientMo
 
 def create_new_client(client_manager: ClientManager) -> Optional[ClientModel]:
     """Create a new client"""
-    print("\n📝 Create New Client")
-    print("=" * 50)
-
-    try:
-        # Required fields
-        name = input("Client/Company name: ").strip()
-        if not name:
-            print("Client name is required.")
-            return None
-
-        email = input("Email address: ").strip()
-        if not email:
-            print("Email address is required.")
-            return None
-
-        # Optional fields
-        company = input(f"Company name (default: {name}): ").strip()
-        if not company:
-            company = name
-
-        # Client code - required field for invoice organization
-        default_code = name[:3].upper()
-        client_code = input(f"Client code (default: {default_code}): ").strip()
-        if not client_code:
-            client_code = default_code
-
-        address = input("Address (optional): ").strip()
-        phone = input("Phone (optional): ").strip()
-        notes = input("Notes (optional): ").strip()
-
-        # Create client data
-        client_data = {
-            "name": name,
-            "email": email,
-            "company": company,
-            "client_code": client_code,
-            "address": address,
-            "phone": phone,
-            "notes": notes,
-        }
-
-        # Save client
-        client_id = client_manager.add_client(client_data)
-        full_client_data = client_manager.get_client(client_id)
-
-        print(f"\n✅ Client '{name}' created successfully!")
-        return full_client_data
-
-    except Exception as e:
-        print(f"Error creating client: {e}")
-        return None
+    return create_client_interactive(client_manager, "Create New Client")
 
 
 def get_invoice_details() -> Optional[InvoiceModel]:

@@ -6,7 +6,14 @@ This module defines data models for clients, invoices, and other entities.
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    EmailStr,
+    field_validator,
+    field_serializer,
+)
 
 
 class ClientModel(BaseModel):
@@ -44,13 +51,14 @@ class ClientModel(BaseModel):
             raise ValueError("Name cannot be empty")
         return v.strip()
 
-    class Config:
-        """Pydantic configuration"""
+    @field_serializer("created_date", "last_invoice_date")
+    def serialize_datetime(self, v: Optional[datetime]) -> Optional[str]:
+        """Serialize datetime fields to ISO format"""
+        return v.isoformat() if v else None
 
-        # Allow datetime objects to be serialized to ISO format
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
-        # Validate assignments
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
 
 class ClientSummaryModel(BaseModel):
@@ -188,13 +196,14 @@ class InvoiceModel(BaseModel):
                 )
         return round(v, 2)
 
-    class Config:
-        """Pydantic configuration"""
+    @field_serializer("invoice_date")
+    def serialize_datetime(self, v: datetime) -> str:
+        """Serialize datetime fields to ISO format"""
+        return v.isoformat()
 
-        # Allow datetime objects to be serialized to ISO format
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
-        # Validate assignments
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
 
 class InvoiceSummaryModel(BaseModel):
