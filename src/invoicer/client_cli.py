@@ -6,6 +6,7 @@ This tool allows you to manage client data from the command line.
 """
 
 import typer
+from typing import Optional
 
 from invoicer.utils import print_with_underline
 from .client_manager import ClientManager
@@ -180,15 +181,24 @@ def delete(client_ids: str):
 
 # Project management commands
 @project_app.command("add")
-def add_project(client_id: str, project_name: str):
+def add_project(project_name: str, client_id: Optional[str] = typer.Argument(None, help="Client ID (if not provided, you'll be prompted to select)")):
     """Add a new project to an existing client"""
     client_manager = ClientManager()
     
-    # Check if client exists
-    client = client_manager.get_client(client_id)
-    if not client:
-        print(f"❌ Client with ID '{client_id}' not found.")
-        return
+    # If client_id not provided, let user select
+    if client_id is None:
+        from .main import select_client
+        client = select_client()
+        if not client:
+            print("❌ No client selected. Project creation cancelled.")
+            return
+        client_id = client.id
+    else:
+        # Check if provided client exists
+        client = client_manager.get_client(client_id)
+        if not client:
+            print(f"❌ Client with ID '{client_id}' not found.")
+            return
     
     # Add project
     project_id = client_manager.add_project(client_id, project_name)

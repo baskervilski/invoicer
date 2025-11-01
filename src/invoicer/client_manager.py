@@ -46,6 +46,18 @@ class ClientManager:
         }
         self.index_file.write_text(json.dumps(initial_data, indent=2))
 
+    def _get_client_dir(self, client_id: str) -> Path:
+        """Get the directory path for a client"""
+        return self.clients_dir / client_id
+
+    def _get_client_file(self, client_id: str) -> Path:
+        """Get the client.json file path for a client"""
+        return self._get_client_dir(client_id) / "client.json"
+
+    def _get_project_file(self, client_id: str, project_name: str) -> Path:
+        """Get the project file path for a project"""
+        return self._get_client_dir(client_id) / f"project_{project_name}.json"
+
     def _load_index(self) -> dict[str, dict]:
         """Load the client index"""
         try:
@@ -101,8 +113,11 @@ class ClientManager:
             notes=client_data.get("notes", ""),
         )
 
-        # Save individual client file
-        client_file = self.clients_dir / f"{client_id}.json"
+        # Create client directory and save client file
+        client_dir = self._get_client_dir(client_id)
+        client_dir.mkdir(exist_ok=True)
+        
+        client_file = self._get_client_file(client_id)
         client_file.write_text(client_model.model_dump_json(indent=2))
 
         # Update index using model data
@@ -129,7 +144,7 @@ class ClientManager:
         Returns:
             ClientModel or None: Client model if found, None otherwise
         """
-        client_file = self.clients_dir / f"{client_id}.json"
+        client_file = self._get_client_file(client_id)
 
         if not client_file.exists():
             return None
@@ -221,7 +236,7 @@ class ClientManager:
             return False
 
         # Save updated client file
-        client_file = self.clients_dir / f"{client_id}.json"
+        client_file = self._get_client_file(client_id)
         client_file.write_text(
             json.dumps(updated_model.model_dump(mode="json"), indent=2)
         )
@@ -275,7 +290,7 @@ class ClientManager:
         updated_model = ClientModel(**updated_data)
 
         # Save updated client data
-        client_file = self.clients_dir / f"{client_id}.json"
+        client_file = self._get_client_file(client_id)
         client_file.write_text(
             json.dumps(updated_model.model_dump(mode="json"), indent=2)
         )
@@ -292,7 +307,7 @@ class ClientManager:
             self._save_index(index)
 
     def delete_client(self, client_id: str) -> bool:
-        """Delete a client
+        """Delete a client and all associated projects
 
         Args:
             client_id: The client ID
@@ -300,12 +315,13 @@ class ClientManager:
         Returns:
             bool: True if successful, False if client not found
         """
-        client_file = self.clients_dir / f"{client_id}.json"
-        if not client_file.exists():
+        client_dir = self._get_client_dir(client_id)
+        if not client_dir.exists():
             return False
 
-        # Remove client file
-        client_file.unlink()
+        # Remove entire client directory and all contents
+        import shutil
+        shutil.rmtree(client_dir)
 
         # Remove from index
         index = self._load_index()
@@ -378,8 +394,10 @@ class ClientManager:
             client_id=client_id,
         )
 
-        # Save project file
-        project_file = self.clients_dir / f"project_{project_id}.json"
+        # Save project file in client directory
+        # Extract just the project name from the project_id (remove client_id prefix)
+        project_name = project_id[len(client_id) + 1:]  # +1 for the underscore
+        project_file = self._get_project_file(client_id, project_name)
         project_file.write_text(project_model.model_dump_json(indent=2))
 
         # Update client's project list
@@ -392,21 +410,42 @@ class ClientManager:
         """Get project data by ID
 
         Args:
-            project_id: The project ID
+            project_id: The project ID (format: client_id_project_name)
 
         Returns:
             ProjectModel or None: Project model if found, None otherwise
         """
-        project_file = self.clients_dir / f"project_{project_id}.json"
+        # Extract client_id and project_name from project_id
+        parts = project_id.split('_', 1)
+        if len(parts) != 2:
+            return None
+            
+        client_id, project_name = parts
+        project_file = self._get_project_file(client_id, project_name)
 
         if not project_file.exists():
-            return None
+            # Try to find the project by searching through client directories
+            return self._find_project_by_id(project_id)
 
         try:
             data = json.loads(project_file.read_text())
             return ProjectModel(**data)
         except (json.JSONDecodeError, ValidationError, Exception):
             return None
+
+    def _find_project_by_id(self, project_id: str) -> Optional[ProjectModel]:
+        """Find a project by ID by searching through all client directories"""
+        for client_dir in self.clients_dir.iterdir():
+            if client_dir.is_dir() and client_dir.name != "clients_index.json":
+                for project_file in client_dir.glob("project_*.json"):
+                    try:
+                        data = json.loads(project_file.read_text())
+                        project = ProjectModel(**data)
+                        if project.id == project_id:
+                            return project
+                    except (json.JSONDecodeError, ValidationError, Exception):
+                        continue
+        return None
 
     def list_projects(self, client_id: str) -> List[ProjectModel]:
         """List all projects for a client
@@ -417,15 +456,19 @@ class ClientManager:
         Returns:
             List of project models
         """
-        client = self.get_client(client_id)
-        if not client:
+        client_dir = self._get_client_dir(client_id)
+        if not client_dir.exists():
             return []
 
         projects = []
-        for project_id in client.projects:
-            project = self.get_project(project_id)
-            if project:
+        # Find all project files in the client directory
+        for project_file in client_dir.glob("project_*.json"):
+            try:
+                data = json.loads(project_file.read_text())
+                project = ProjectModel(**data)
                 projects.append(project)
+            except (json.JSONDecodeError, ValidationError, Exception):
+                continue
 
         # Sort by creation date (newest first)
         return sorted(projects, key=lambda x: x.created_date, reverse=True)
@@ -443,8 +486,24 @@ class ClientManager:
         if not project:
             return False
 
-        project_file = self.clients_dir / f"project_{project_id}.json"
-        project_file.unlink()
+        # Extract client_id and project_name from project_id
+        parts = project_id.split('_', 1)
+        if len(parts) == 2:
+            client_id, project_name = parts
+            project_file = self._get_project_file(client_id, project_name)
+            if project_file.exists():
+                project_file.unlink()
+            else:
+                # Fallback: find and delete the project file
+                client_dir = self._get_client_dir(project.client_id)
+                for pf in client_dir.glob("project_*.json"):
+                    try:
+                        data = json.loads(pf.read_text())
+                        if data.get("id") == project_id:
+                            pf.unlink()
+                            break
+                    except:
+                        continue
 
         # Remove from client's project list
         client = self.get_client(project.client_id)
