@@ -62,24 +62,15 @@ class ClientManager:
                 # Handle backwards compatibility - if old data has 'company' but no 'name'
                 client_name = client_data.get("name") or client_data.get("company", "Unknown Client")
                 
-                # Scan for projects in this client directory
-                projects = []
-                for project_file in client_dir.glob("project_*.json"):
-                    try:
-                        project_data = json.loads(project_file.read_text())
-                        projects.append(project_data.get("id", ""))
-                    except (json.JSONDecodeError, Exception):
-                        continue
-                
-                # Build index entry
+                # Build index entry (projects removed from client.json)
                 index_data["clients"][client_id] = {
                     "name": client_name,
                     "email": client_data.get("email", ""),
                     "client_code": client_data.get("client_code", ""),
+                    "vat_number": client_data.get("vat_number", ""),
                     "created_date": client_data.get("created_date", datetime.now().isoformat()),
                     "last_invoice_date": client_data.get("last_invoice_date"),
                     "total_invoices": client_data.get("total_invoices", 0),
-                    "projects": projects,
                 }
                 
             except (json.JSONDecodeError, KeyError, Exception):
@@ -143,7 +134,9 @@ class ClientManager:
             address=client_data.get("address", ""),
             phone=client_data.get("phone", ""),
             client_code=client_data.get("client_code", client_data["name"][:3].upper()),
+            vat_number=client_data.get("vat_number", ""),
             notes=client_data.get("notes", ""),
+            created_date=datetime.now(),
         )
 
         # Create client directory and save client file
@@ -216,6 +209,7 @@ class ClientManager:
                     name=client_name,
                     email=client_summary["email"],
                     client_code=client_summary["client_code"],
+                    vat_number=client_summary.get("vat_number", ""),
                     created_date=datetime.fromisoformat(client_summary["created_date"]),
                     last_invoice_date=datetime.fromisoformat(
                         client_summary["last_invoice_date"]
@@ -223,7 +217,6 @@ class ClientManager:
                     if client_summary.get("last_invoice_date")
                     else None,
                     total_invoices=client_summary.get("total_invoices", 0),
-                    projects=client_summary.get("projects", []),
                 )
                 clients.append(client_model)
             except (ValidationError, ValueError, KeyError):
@@ -266,7 +259,7 @@ class ClientManager:
         )
 
         # Update index if necessary
-        if any(key in ["name", "email", "client_code", "projects"] for key in updates.keys()):
+        if any(key in ["name", "email", "client_code", "vat_number"] for key in updates.keys()):
             self._update_index()
 
         return True
@@ -393,6 +386,7 @@ class ClientManager:
             id=project_id,
             name=project_name.strip(),
             client_id=client_id,
+            created_date=datetime.now(),
         )
 
         # Save project file in client directory
@@ -401,10 +395,7 @@ class ClientManager:
         project_file = self._get_project_file(client_id, project_name)
         project_file.write_text(project_model.model_dump_json(indent=2))
 
-        # Update client's project list
-        updated_projects = client.projects + [project_id]
-        self.update_client(client_id, {"projects": updated_projects})
-
+        # Projects are no longer tracked in client.json - they exist as individual files
         return project_id
 
     def get_project(self, project_id: str) -> Optional[ProjectModel]:
@@ -506,12 +497,7 @@ class ClientManager:
                     except:
                         continue
 
-        # Remove from client's project list
-        client = self.get_client(project.client_id)
-        if client and project_id in client.projects:
-            updated_projects = [pid for pid in client.projects if pid != project_id]
-            self.update_client(project.client_id, {"projects": updated_projects})
-
+        # Projects are no longer tracked in client.json, just delete the file
         return True
 
 
@@ -524,6 +510,7 @@ def create_sample_clients(client_manager: ClientManager):
             "address": "123 Business Ave\nNew York, NY 10001",
             "phone": "+1 (555) 123-4567",
             "client_code": "ACM",
+            "vat_number": "US123456789",
             "notes": "Long-term client, payment terms NET 30",
         },
         {
@@ -532,6 +519,7 @@ def create_sample_clients(client_manager: ClientManager):
             "address": "456 Innovation Drive\nSan Francisco, CA 94107",
             "phone": "+1 (555) 987-6543",
             "client_code": "TSS",
+            "vat_number": "US987654321",
             "notes": "Startup client, prefers electronic invoices",
         },
         {
@@ -540,6 +528,7 @@ def create_sample_clients(client_manager: ClientManager):
             "address": "789 Corporate Blvd\nChicago, IL 60601",
             "phone": "+1 (555) 246-8135",
             "client_code": "GDI",
+            "vat_number": "US456789123",
             "notes": "Enterprise client, requires detailed project descriptions",
         },
     ]

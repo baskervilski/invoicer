@@ -126,6 +126,11 @@ class InvoiceGenerator:
         # Generate the PDF
         doc.build(story)
 
+        # Save invoice data as JSON alongside the PDF
+        json_filename = f"Invoice_{invoice_number}.json"
+        json_filepath = client_dir / json_filename
+        json_filepath.write_text(invoice_data.model_dump_json(indent=2))
+
         return filepath
 
     def _build_header(self, invoice_data: InvoiceModel) -> List:

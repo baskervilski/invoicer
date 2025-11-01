@@ -58,8 +58,8 @@ def sample_client():
         name="Test Client Corp",
         email="client@test.com",
         client_code="TST",
+        vat_number="TST123456789",
         created_date=datetime(2023, 1, 1),
-        projects=[],
         address="123 Test St\nTest City, TS 12345",
         phone="+1-555-0123",
     )
@@ -73,10 +73,10 @@ def sample_client_1():
         name="Client One",
         email="one@example.com",
         client_code="ONE",
+        vat_number="ONE123456789",
         created_date=datetime(2023, 1, 1),
-        projects=[],
-        address="123 First St\nSample City, SC 12345",
-        phone="+1-555-0345",
+        address="456 One Ave\nOne City, OC 54321",
+        phone="+1-555-0456",
     )
 
 
@@ -88,10 +88,10 @@ def sample_client_2():
         name="Client Two",
         email="two@example.com",
         client_code="TWO",
+        vat_number="TWO123456789",
         created_date=datetime(2023, 1, 1),
-        projects=[],
-        address="789 Second St\nAnother City, AC 23456",
-        phone="+1-555-0456",
+        address="789 Two Blvd\nTwo City, TC 98765",
+        phone="+1-555-0789",
     )
 
 
@@ -103,8 +103,8 @@ def existing_client():
         name="Existing Client",
         email="existing@example.com",
         client_code="EXT",
+        vat_number="EXT123456789",
         created_date=datetime(2023, 1, 1),
-        projects=[],
         address="456 Existing St\nExist City, EX 67890",
         phone="+1-555-6789",
     )

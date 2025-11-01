@@ -47,6 +47,11 @@ def generate_uuid() -> str:
 # Single-use field types for models.py
 # ============================================================================
 
+VatNumberField = Annotated[
+    str,
+    BeforeValidator(strip_whitespace),
+    Field(max_length=50, description="VAT number for the client"),
+]
 
 ClientEmailField = Annotated[
     EmailStr,
@@ -250,8 +255,8 @@ class ClientSummaryModel(BaseModel):
     name: ClientNameField
     email: ClientEmailField
     client_code: ClientCodeField
+    vat_number: VatNumberField = ""
     created_date: AutoDateTimeField
-    projects: ProjectIdListField
     last_invoice_date: OptionalDateTimeField = None
     total_invoices: InvoiceCountField = 0
 

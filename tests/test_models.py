@@ -21,12 +21,17 @@ def test_client_model_basic_creation():
         name="Test Company",
         email="test@company.com",
         client_code="TST",
+        vat_number="TST123456789",
         address="123 Business Rd\nBusiness City, BC 12345",
+        phone="+1-555-0123",
+        created_date=datetime(2023, 1, 1),
     )
 
+    assert client.id == "test_client"
     assert client.name == "Test Company"
     assert client.email == "test@company.com"
-    assert client.client_code == "TST"  # Should be uppercase
+    assert client.client_code == "TST"
+    assert client.vat_number == "TST123456789"
     assert client.total_invoices == 0
     assert client.total_amount == 0.0
 
@@ -35,11 +40,29 @@ def test_client_model_validation_failures():
     """Test that ClientModel rejects invalid data."""
     # Invalid email
     with pytest.raises(ValidationError):
-        ClientModel(id="test", name="Test", email="invalid-email", client_code="TST")
+        ClientModel(
+            id="test", 
+            name="Test", 
+            email="invalid-email", 
+            client_code="TST",
+            vat_number="TST123",
+            address="123 Test St",
+            phone="+1-555-0123",
+            created_date=datetime(2023, 1, 1)
+        )
 
     # Empty name
     with pytest.raises(ValidationError):
-        ClientModel(id="test", name="", email="test@test.com", client_code="TST")
+        ClientModel(
+            id="test", 
+            name="", 
+            email="test@test.com", 
+            client_code="TST",
+            vat_number="TST123",
+            address="123 Test St",
+            phone="+1-555-0123",
+            created_date=datetime(2023, 1, 1)
+        )
 
 
 def test_invoice_item_calculation_validation():

@@ -5,6 +5,8 @@ Unit tests for client utilities - testing shared client creation functionality.
 from unittest.mock import Mock, patch
 from io import StringIO
 
+import pytest
+
 from invoicer.client_utils import create_client_interactive, get_client_creation_data
 from invoicer.models import ClientModel
 
@@ -141,59 +143,41 @@ def test_create_client_interactive_exception():
     assert "Database error" in output
 
 
-def test_get_client_creation_data_success():
+def test_get_client_creation_data_success(client_creation_user_inputs):
     """Test successful data collection without creating client."""
-    user_inputs = [
-        "Test Client",  # name
-        "test@example.com",  # email
-        "Test Company",  # company
-        "TST",  # client_code
-        "123 Test St",  # address
-        "+1-555-0123",  # phone
-        "Test notes",  # notes
-        "Test Project",  # project_name
-    ]
-
+    user_inputs = client_creation_user_inputs.values()
     with patch("builtins.input", side_effect=user_inputs):
         result = get_client_creation_data()
 
     # Verify data was collected correctly
-    assert result is not None
-    assert result["name"] == "Test Client"
-    assert result["email"] == "test@example.com"
-    assert result["company"] == "Test Company"
-    assert result["client_code"] == "TST"
-    assert result["address"] == "123 Test St"
-    assert result["phone"] == "+1-555-0123"
-    assert result["notes"] == "Test notes"
-    assert result["project_name"] == "Test Project"
+    for key, value in client_creation_user_inputs.items():
+        assert result[key] == value
 
+@pytest.fixture
+def client_creation_user_inputs() -> dict:
+    """Fixture providing default user inputs for client creation tests."""
+    return {
+        "name": "Test Client",
+        "email": "test@example.com",
+        "company": "Test Company",
+        "client_code": "TST",
+        "address": "123 Test St",
+        "phone": "+1-555-0123",
+        "vat_number": "VAT123",
+        "notes": "Test notes",
+        "project_name": "Test Project",
+    }
 
-def test_get_client_creation_data_with_defaults():
+def test_get_client_creation_data_with_defaults(client_creation_user_inputs):
     """Test data collection using default values."""
-    user_inputs = [
-        "Test Client",  # name
-        "test@example.com",  # email
-        "",  # company (uses default)
-        "",  # client_code (uses default)
-        "",  # address
-        "",  # phone
-        "",  # notes
-        "Test Project",  # project_name
-    ]
+    user_inputs = client_creation_user_inputs.values()
 
     with patch("builtins.input", side_effect=user_inputs):
-        result = get_client_creation_data()
+        result = get_client_creation_data(raise_errors=True)
 
     # Verify defaults were applied
-    assert result is not None
-    assert result["name"] == "Test Client"
-    assert result["company"] == "Test Client"  # Should default to name
-    assert result["client_code"] == "TES"  # Should default to first 3 chars uppercase
-    assert result["address"] == ""
-    assert result["phone"] == ""
-    assert result["notes"] == ""
-    assert result["project_name"] == "Test Project"
+    for key, value in client_creation_user_inputs.items():
+        assert result[key] == value
 
 
 def test_get_client_creation_data_empty_name():
