@@ -251,17 +251,17 @@ class ClientSummaryModel(BaseModel):
     email: ClientEmailField
     client_code: ClientCodeField
     created_date: AutoDateTimeField
+    projects: ProjectIdListField
     last_invoice_date: OptionalDateTimeField = None
     total_invoices: InvoiceCountField = 0
-    projects: ProjectIdListField
 
 
 class ClientModel(ClientSummaryModel):
     """Pydantic model for client data using standardized field types."""
 
     # Additional fields beyond the summary
-    address: OptionalNotesField = ""
-    phone: PhoneField = ""
+    address: str
+    phone: PhoneField
     notes: OptionalNotesField = ""
     total_amount: NonNegativeFloatField = 0.0
 

@@ -4,7 +4,7 @@ Generate sample invoices for different project scenarios
 """
 
 from pathlib import Path
-from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from .invoice_generator import InvoiceGenerator, create_invoice_data
 
 
 def generate_samples():
@@ -20,7 +20,7 @@ def generate_samples():
     generator = InvoiceGenerator()
 
     for name, email, days, client_code, month in scenarios:
-        data = create_sample_invoice_data(name, email, client_code, days, month)
+        data = create_invoice_data(name, email, client_code, days, month)
         path = generator.create_invoice(data)
         print(f"✅ {name}: {Path(path).name}")
 

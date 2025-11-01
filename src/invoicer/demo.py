@@ -5,7 +5,7 @@ This script demonstrates PDF creation without requiring Microsoft email setup
 """
 
 from pathlib import Path
-from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from .invoice_generator import InvoiceGenerator, create_invoice_data
 from .config import settings
 
 
@@ -47,7 +47,7 @@ def demo_invoice_generation():
 
         try:
             # Create invoice data
-            invoice_data = create_sample_invoice_data(
+            invoice_data = create_invoice_data(
                 settings=settings,
                 client_name=client["name"],
                 client_email=client["email"],

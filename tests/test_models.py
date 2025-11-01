@@ -21,6 +21,7 @@ def test_client_model_basic_creation():
         name="Test Company",
         email="test@company.com",
         client_code="TST",
+        address="123 Business Rd\nBusiness City, BC 12345",
     )
 
     assert client.name == "Test Company"
@@ -64,6 +65,8 @@ def test_invoice_model_financial_validation(sample_invoice):
     # Tax amount validation
     with pytest.raises(ValidationError):
         InvoiceModel(
+            invoice_date=sample_invoice.invoice_date,
+            payment_terms=sample_invoice.payment_terms,
             invoice_number="INV-001",
             client_info=sample_invoice.client_info,
             line_items=sample_invoice.line_items,
@@ -82,13 +85,19 @@ def test_invoice_model_financial_validation(sample_invoice):
             subtotal=1000.0,
             tax_amount=100.0,
             total_amount=1000.0,  # Should be 1100.0
+            invoice_date=sample_invoice.invoice_date,
+            payment_terms=sample_invoice.payment_terms,
         )
 
 
 def test_invoice_model_creates_successfully():
     """Test that InvoiceModel can be created with valid data."""
     client_info = InvoiceClientInfoModel(
-        name="Test Client", email="client@test.com", client_code="TST"
+        name="Test Client",
+        email="client@test.com",
+        client_code="TST",
+        client_id="test_client",
+        address="123 Test St\nTest City, TS 12345"
     )
 
     invoice = InvoiceModel(
@@ -96,6 +105,8 @@ def test_invoice_model_creates_successfully():
         client_info=client_info,
         subtotal=1000.0,
         total_amount=1000.0,
+        invoice_date=datetime(2023, 1, 1),
+        payment_terms="Net 30 days",
     )
 
     assert invoice.invoice_number == "INV-001"

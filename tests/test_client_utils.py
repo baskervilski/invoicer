@@ -20,6 +20,7 @@ def test_create_client_interactive_success():
         name="Test Client",
         email="test@example.com",
         client_code="TST",
+        address="123 Test St",
     )
 
     # Configure mocks
@@ -221,6 +222,7 @@ def test_create_client_interactive_custom_title():
         name="Test Client",
         email="test@example.com",
         client_code="TST",
+        address="123 Test St",
     )
     mock_client_manager.add_client.return_value = "test_client"
     mock_client_manager.get_client.return_value = sample_client

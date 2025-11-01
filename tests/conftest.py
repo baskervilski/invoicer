@@ -60,6 +60,8 @@ def sample_client():
         client_code="TST",
         created_date=datetime(2023, 1, 1),
         projects=[],
+        address="123 Test St\nTest City, TS 12345",
+        phone="+1-555-0123",
     )
 
 
@@ -73,6 +75,8 @@ def sample_client_1():
         client_code="ONE",
         created_date=datetime(2023, 1, 1),
         projects=[],
+        address="123 First St\nSample City, SC 12345",
+        phone="+1-555-0345",
     )
 
 
@@ -86,6 +90,8 @@ def sample_client_2():
         client_code="TWO",
         created_date=datetime(2023, 1, 1),
         projects=[],
+        address="789 Second St\nAnother City, AC 23456",
+        phone="+1-555-0456",
     )
 
 
@@ -99,6 +105,8 @@ def existing_client():
         client_code="EXT",
         created_date=datetime(2023, 1, 1),
         projects=[],
+        address="456 Existing St\nExist City, EX 67890",
+        phone="+1-555-6789",
     )
 
 

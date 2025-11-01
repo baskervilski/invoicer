@@ -15,7 +15,7 @@ import calendar
 from invoicer.models import ClientModel, InvoiceModel, ProjectModel
 from invoicer.utils import print_with_underline
 
-from .invoice_generator import InvoiceGenerator, create_sample_invoice_data, generate_invoice_number
+from .invoice_generator import InvoiceGenerator, create_invoice_data, generate_invoice_number
 from .email_sender import EmailSender
 from .client_manager import ClientManager, create_sample_clients
 from .config import settings
@@ -433,11 +433,9 @@ def get_invoice_details() -> Optional[InvoiceModel]:
             return None
 
         # Create invoice data with the confirmed invoice number
-        invoice_data = create_sample_invoice_data(
+        invoice_data = create_invoice_data(
             settings=settings,
-            client_name=client.name,
-            client_email=client.email,
-            client_code=client.client_code,
+            client=client,
             days_worked=days_worked,
             month_year=month_year,
             invoice_date=invoice_date,

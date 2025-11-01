@@ -18,7 +18,7 @@ from reportlab.lib.enums import TA_RIGHT, TA_LEFT
 from invoicer.config import InvoicerSettings
 
 # from . import config
-from .models import InvoiceModel, InvoiceItemModel, InvoiceClientInfoModel
+from .models import ClientModel, InvoiceModel, InvoiceItemModel, InvoiceClientInfoModel
 
 
 class InvoiceGenerator:
@@ -400,11 +400,9 @@ def generate_invoice_number(
         return f"INV-{invoice_date.strftime('%Y%m')}-{client_code}"
 
 
-def create_sample_invoice_data(
+def create_invoice_data(
     settings: InvoicerSettings,
-    client_name: str = "Sample Client",
-    client_email: str = "client@example.com",
-    client_code: str = "SAM",
+    client: ClientModel,
     days_worked: int = 20,
     month_year: str | None = None,
     invoice_date: datetime | None = None,
@@ -429,7 +427,7 @@ def create_sample_invoice_data(
 
     # Generate invoice number using the client code
     invoice_number = generate_invoice_number(
-        settings.invoice_number_template, client_code
+        settings.invoice_number_template, client.client_code
     )
 
     assert isinstance(invoice_number, str), f"Expected str, got {type(invoice_number)}"
@@ -445,11 +443,11 @@ def create_sample_invoice_data(
 
     # Create client info
     client_info = InvoiceClientInfoModel(
-        name=client_name,
-        email=client_email,
-        client_code=client_code,
-        address="Client Company\n123 Business Ave\nCity, State 12345",
-        client_id=None,
+        name=client.name,
+        email=client.email,
+        client_code=client.client_code,
+        address=client.address,
+        client_id=client.id,
     )
 
     # Create line item

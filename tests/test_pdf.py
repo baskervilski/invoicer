@@ -3,17 +3,16 @@ Test PDF invoice generation functionality.
 """
 
 from pathlib import Path
-from invoicer.invoice_generator import InvoiceGenerator, create_sample_invoice_data
+from invoicer.invoice_generator import InvoiceGenerator, create_invoice_data
+from invoicer.models import ClientModel
 
 
-def test_pdf_generation(test_generator: InvoiceGenerator):
+def test_pdf_generation(test_generator: InvoiceGenerator, sample_client):
     """Test that PDF invoices can be generated successfully."""
     # Create sample invoice data using InvoiceModel
-    invoice_data = create_sample_invoice_data(
+    invoice_data = create_invoice_data(
         settings=test_generator.settings,
-        client_name="Test Client Corp",
-        client_email="test@example.com",
-        client_code="TST",
+        client=sample_client,
         days_worked=10,
         month_year="October 2024",
     )
@@ -38,13 +37,12 @@ def test_pdf_generation(test_generator: InvoiceGenerator):
     assert file_size > 1000  # Should be a reasonable size for a PDF
 
 
-def test_pdf_generation_with_tax(test_generator: InvoiceGenerator):
+def test_pdf_generation_with_tax(test_generator: InvoiceGenerator, sample_client):
     """Test PDF generation with tax calculations."""
     # Create invoice data with tax
-    invoice_data = create_sample_invoice_data(
+    invoice_data = create_invoice_data(
         settings=test_generator.settings,
-        client_name="Tax Test Client",
-        client_code="TAX",
+        client=sample_client,
         days_worked=5,
     )
 
@@ -61,19 +59,18 @@ def test_pdf_generation_with_tax(test_generator: InvoiceGenerator):
     assert pdf_path.suffix == ".pdf"
 
 
-def test_pdf_generation_different_clients(test_generator: InvoiceGenerator):
+def test_pdf_generation_different_clients(test_generator: InvoiceGenerator, sample_client: ClientModel, sample_client_2: ClientModel, sample_client_1: ClientModel):
     """Test PDF generation for different client codes."""
-    client_codes = ["ABC", "XYZ", "DEF"]
+    clients = [sample_client, sample_client_2, sample_client_1]
 
-    for code in client_codes:
-        invoice_data = create_sample_invoice_data(
+    for client in clients:
+        invoice_data = create_invoice_data(
             settings=test_generator.settings,
-            client_name=f"Client {code}",
-            client_code=code,
+            client=client,
             days_worked=8,
         )
 
         pdf_path = test_generator.create_invoice(invoice_data)
 
         assert pdf_path.exists()
-        assert code in str(pdf_path)  # Client code should be in path
+        assert client.client_code in str(pdf_path)  # Client code should be in path
