@@ -24,6 +24,7 @@ def test_create_client_interactive_success():
 
     # Configure mocks
     mock_client_manager.add_client.return_value = "test_client"
+    mock_client_manager.add_project.return_value = "test_client_test_project"
     mock_client_manager.get_client.return_value = sample_client
 
     # Mock user inputs
@@ -35,6 +36,7 @@ def test_create_client_interactive_success():
         "123 Test St",  # address
         "+1-555-0123",  # phone
         "Test notes",  # notes
+        "Test Project",  # project_name
     ]
 
     captured_output = StringIO()
@@ -118,6 +120,7 @@ def test_create_client_interactive_exception():
         "",
         "",
         "",  # Default values for other fields
+        "Test Project",  # project_name
     ]
 
     captured_output = StringIO()
@@ -147,6 +150,7 @@ def test_get_client_creation_data_success():
         "123 Test St",  # address
         "+1-555-0123",  # phone
         "Test notes",  # notes
+        "Test Project",  # project_name
     ]
 
     with patch("builtins.input", side_effect=user_inputs):
@@ -161,6 +165,7 @@ def test_get_client_creation_data_success():
     assert result["address"] == "123 Test St"
     assert result["phone"] == "+1-555-0123"
     assert result["notes"] == "Test notes"
+    assert result["project_name"] == "Test Project"
 
 
 def test_get_client_creation_data_with_defaults():
@@ -173,6 +178,7 @@ def test_get_client_creation_data_with_defaults():
         "",  # address
         "",  # phone
         "",  # notes
+        "Test Project",  # project_name
     ]
 
     with patch("builtins.input", side_effect=user_inputs):
@@ -186,6 +192,7 @@ def test_get_client_creation_data_with_defaults():
     assert result["address"] == ""
     assert result["phone"] == ""
     assert result["notes"] == ""
+    assert result["project_name"] == "Test Project"
 
 
 def test_get_client_creation_data_empty_name():

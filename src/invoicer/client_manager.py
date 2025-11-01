@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from datetime import datetime
 from pydantic import ValidationError
 
-from .models import ClientModel, ClientSummaryModel
+from .models import ClientModel, ClientSummaryModel, ProjectModel
 
 
 class ClientManager:
@@ -114,6 +114,7 @@ class ClientManager:
             "created_date": client_model.created_date.isoformat(),
             "last_invoice_date": None,
             "total_invoices": 0,
+            "projects": [],
         }
         self._save_index(index)
 
@@ -183,6 +184,7 @@ class ClientManager:
                     if client_summary.get("last_invoice_date")
                     else None,
                     total_invoices=client_summary.get("total_invoices", 0),
+                    projects=client_summary.get("projects", []),
                 )
                 clients.append(client_model)
             except (ValidationError, ValueError, KeyError):
@@ -225,7 +227,7 @@ class ClientManager:
         )
 
         # Update index if necessary
-        if any(key in ["name", "email", "client_code"] for key in updates.keys()):
+        if any(key in ["name", "email", "client_code", "projects"] for key in updates.keys()):
             index = self._load_index()
             if client_id in index["clients"]:
                 if "name" in updates:
@@ -236,6 +238,8 @@ class ClientManager:
                     index["clients"][client_id]["client_code"] = (
                         updated_model.client_code
                     )
+                if "projects" in updates:
+                    index["clients"][client_id]["projects"] = updated_model.projects
                 self._save_index(index)
 
         return True
@@ -326,6 +330,129 @@ class ClientManager:
                 or query_lower in client.email.lower()
             )
         ]
+
+    def _generate_project_id(self, client_id: str, project_name: str) -> str:
+        """Generate a unique project ID from client ID and project name"""
+        import re
+
+        project_id = re.sub(r"[^a-zA-Z0-9]", "_", project_name.lower())
+        project_id = re.sub(r"_+", "_", project_id).strip("_")
+        base_id = f"{client_id}_{project_id}"
+
+        # Check if ID already exists, add number if needed
+        counter = 1
+        final_id = base_id
+
+        # Check existing projects for this client
+        client = self.get_client(client_id)
+        if client:
+            existing_projects = self.list_projects(client_id)
+            existing_ids = {proj.id for proj in existing_projects}
+
+            while final_id in existing_ids:
+                final_id = f"{base_id}_{counter}"
+                counter += 1
+
+        return final_id
+
+    def add_project(self, client_id: str, project_name: str) -> Optional[str]:
+        """Add a new project to a client
+
+        Args:
+            client_id: The client ID
+            project_name: Name of the project
+
+        Returns:
+            str: The generated project ID, or None if client not found
+        """
+        client = self.get_client(client_id)
+        if not client:
+            return None
+
+        project_id = self._generate_project_id(client_id, project_name)
+
+        # Create project model
+        project_model = ProjectModel(
+            id=project_id,
+            name=project_name.strip(),
+            client_id=client_id,
+        )
+
+        # Save project file
+        project_file = self.clients_dir / f"project_{project_id}.json"
+        project_file.write_text(project_model.model_dump_json(indent=2))
+
+        # Update client's project list
+        updated_projects = client.projects + [project_id]
+        self.update_client(client_id, {"projects": updated_projects})
+
+        return project_id
+
+    def get_project(self, project_id: str) -> Optional[ProjectModel]:
+        """Get project data by ID
+
+        Args:
+            project_id: The project ID
+
+        Returns:
+            ProjectModel or None: Project model if found, None otherwise
+        """
+        project_file = self.clients_dir / f"project_{project_id}.json"
+
+        if not project_file.exists():
+            return None
+
+        try:
+            data = json.loads(project_file.read_text())
+            return ProjectModel(**data)
+        except (json.JSONDecodeError, ValidationError, Exception):
+            return None
+
+    def list_projects(self, client_id: str) -> List[ProjectModel]:
+        """List all projects for a client
+
+        Args:
+            client_id: The client ID
+
+        Returns:
+            List of project models
+        """
+        client = self.get_client(client_id)
+        if not client:
+            return []
+
+        projects = []
+        for project_id in client.projects:
+            project = self.get_project(project_id)
+            if project:
+                projects.append(project)
+
+        # Sort by creation date (newest first)
+        return sorted(projects, key=lambda x: x.created_date, reverse=True)
+
+    def delete_project(self, project_id: str) -> bool:
+        """Delete a project
+
+        Args:
+            project_id: The project ID
+
+        Returns:
+            bool: True if successful, False if project not found
+        """
+        project = self.get_project(project_id)
+        if not project:
+            return False
+
+        project_file = self.clients_dir / f"project_{project_id}.json"
+        project_file.unlink()
+
+        # Remove from client's project list
+        client = self.get_client(project.client_id)
+        if client and project_id in client.projects:
+            updated_projects = [pid for pid in client.projects if pid != project_id]
+            self.update_client(project.client_id, {"projects": updated_projects})
+
+        return True
 
 
 def create_sample_clients(client_manager: ClientManager):

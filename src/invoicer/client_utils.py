@@ -50,6 +50,12 @@ def create_client_interactive(client_manager: ClientManager) -> Optional[ClientM
         phone = input("Phone (optional): ").strip()
         notes = input("Notes (optional): ").strip()
 
+        # Ask for initial project name
+        project_name = input("Initial project name: ").strip()
+        if not project_name:
+            print("Project name is required.")
+            return None
+
         # Create client data
         client_data = {
             "name": name,
@@ -63,9 +69,14 @@ def create_client_interactive(client_manager: ClientManager) -> Optional[ClientM
 
         # Save client
         client_id = client_manager.add_client(client_data)
+        
+        # Add initial project
+        project_id = client_manager.add_project(client_id, project_name)
+        
         full_client_data = client_manager.get_client(client_id)
 
         print(f"\n✅ Client '{name}' created successfully!")
+        print(f"✅ Project '{project_name}' added to client!")
         return full_client_data
 
     except Exception as e:
@@ -108,6 +119,12 @@ def get_client_creation_data() -> Optional[dict]:
         phone = input("Phone (optional): ").strip()
         notes = input("Notes (optional): ").strip()
 
+        # Ask for initial project name
+        project_name = input("Initial project name: ").strip()
+        if not project_name:
+            print("Project name is required.")
+            return None
+
         return {
             "name": name,
             "email": email,
@@ -116,6 +133,7 @@ def get_client_creation_data() -> Optional[dict]:
             "address": address,
             "phone": phone,
             "notes": notes,
+            "project_name": project_name,
         }
 
     except Exception as e:

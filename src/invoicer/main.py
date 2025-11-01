@@ -89,7 +89,7 @@ def main():
 
 def select_client() -> Optional[ClientModel]:
     """
-    Allow user to select from existing clients only
+    Allow user to select from existing clients
 
     Returns:
         Optional[ClientModel]: Client data or None if cancelled
@@ -107,28 +107,26 @@ def select_client() -> Optional[ClientModel]:
         print("\nPlease create at least one client before generating invoices.")
         return None
 
-    # Show options
+    # Ask user how they want to select a client
     print_with_underline("\n👥 Client Selection")
-    print("Choose an option:")
-    print("1. Select from existing clients")
-    print("2. Search clients")
+    print("How would you like to select a client?")
+    print("1. Search by name/email/company")
+    print("2. Browse numbered list")
 
     while True:
-        choice = input("\nEnter your choice (1-2): ").strip()
-
+        choice = input("\nEnter your choice ([1]/2): ").strip() or "1"
+        
         if choice == "1":
-            return select_existing_client(client_manager)
+            return _search_clients(client_manager)
         elif choice == "2":
-            return search_and_select_client(client_manager)
+            return _browse_clients(client_manager, existing_clients)
         else:
             print("Invalid choice. Please enter 1 or 2.")
 
 
-def select_existing_client(client_manager: ClientManager) -> Optional[ClientModel]:
-    """Select from existing clients"""
-    clients = client_manager.list_clients()
-
-    print_with_underline(f"\n📋 Existing Clients ({len(clients)} found):")
+def _browse_clients(client_manager: ClientManager, clients: list) -> Optional[ClientModel]:
+    """Show numbered client list for selection"""
+    print_with_underline(f"\n📋 Browse Clients ({len(clients)} found):")
 
     for i, client in enumerate(clients, 1):
         if client.last_invoice_date:
@@ -146,9 +144,9 @@ def select_existing_client(client_manager: ClientManager) -> Optional[ClientMode
         try:
             choice = input(
                 f"Select client (1-{len(clients)}) or 'b' to go back: "
-            ).strip()
+            ).strip().lower()
 
-            if choice.lower() == "b":
+            if choice == "b":
                 return select_client()
 
             client_index = int(choice) - 1
@@ -165,47 +163,25 @@ def select_existing_client(client_manager: ClientManager) -> Optional[ClientMode
             print("Please enter a valid number or 'b' to go back.")
 
 
-def search_and_select_client(client_manager: ClientManager) -> Optional[ClientModel]:
-    """Search and select client"""
-    query = input("🔍 Enter search term (name, email, or company): ").strip()
-    if not query:
-        return select_client()
-
-    results = client_manager.search_clients(query)
-
-    if not results:
-        print(f"No clients found matching '{query}'")
-        retry = input("Try another search? (y/n): ").strip().lower()
-        if retry == "y":
-            return search_and_select_client(client_manager)
-        else:
+def _search_clients(client_manager: ClientManager) -> Optional[ClientModel]:
+    """Search for clients and allow selection"""
+    while True:
+        query = input("🔍 Enter search term (name, email, or company): ").strip()
+        if not query:
             return select_client()
 
-    print_with_underline(f"\n🔍 Search Results for '{query}' ({len(results)} found):")
+        results = client_manager.search_clients(query)
 
-    for i, client in enumerate(results, 1):
-        print(f"{i:2d}. {client.name} ({client.email})")
-
-    while True:
-        try:
-            choice = input(
-                f"\nSelect client (1-{len(results)}) or 'b' to go back: "
-            ).strip()
-
-            if choice.lower() == "b":
+        if not results:
+            print(f"No clients found matching '{query}'")
+            retry = input("Try another search? ([y]/n): ").strip().lower() or "y"
+            if retry != "y":
                 return select_client()
+            continue
 
-            client_index = int(choice) - 1
-            if 0 <= client_index < len(results):
-                selected_client = results[client_index]
-                full_client_data = client_manager.get_client(selected_client.id)
-                print(f"\n✅ Selected: {selected_client.name}")
-                return full_client_data
-            else:
-                print("Invalid selection. Please try again.")
-
-        except ValueError:
-            print("Please enter a valid number or 'b' to go back.")
+        # Show search results using the browse function
+        print(f"\n🔍 Search results for '{query}':")
+        return _browse_clients(client_manager, results)
 
 
 def get_invoice_details() -> Optional[InvoiceModel]:

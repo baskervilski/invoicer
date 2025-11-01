@@ -17,6 +17,16 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+# Create a sub-app for project management
+project_app = typer.Typer(
+    name="project",
+    help="Project management commands",
+    no_args_is_help=True,
+)
+
+# Add the project sub-app to the main client app
+app.add_typer(project_app, name="project")
+
 
 @app.command("list")
 def list_clients():
@@ -93,6 +103,16 @@ def show(client_id: str):
     print(f"Last Invoice: {client.last_invoice_date or 'Never'}")
     print(f"Total Invoices: {client.total_invoices:,}")
     print(f"Total Amount: ${client.total_amount:,.2f}")
+    
+    # Show projects
+    projects = client_manager.list_projects(client_id)
+    if projects:
+        print(f"\n📂 Projects ({len(projects)}):")
+        for project in projects:
+            print(f"  - {project.name} (ID: {project.id})")
+            print(f"    Created: {project.created_date}")
+    else:
+        print("\n📂 Projects: None")
 
 
 @app.command()
@@ -154,6 +174,101 @@ def delete(client_ids: str):
         print(f"\nSummary: {successful_deletions} client(s) deleted successfully.")
         if failed_deletions:
             print(f"Failed to delete: {', '.join(failed_deletions)}")
+    else:
+        print("Deletion cancelled.")
+
+
+# Project management commands
+@project_app.command("add")
+def add_project(client_id: str, project_name: str):
+    """Add a new project to an existing client"""
+    client_manager = ClientManager()
+    
+    # Check if client exists
+    client = client_manager.get_client(client_id)
+    if not client:
+        print(f"❌ Client with ID '{client_id}' not found.")
+        return
+    
+    # Add project
+    project_id = client_manager.add_project(client_id, project_name)
+    
+    if project_id:
+        print(f"✅ Project '{project_name}' added to client '{client.name}'!")
+        print(f"Project ID: {project_id}")
+    else:
+        print(f"❌ Failed to add project '{project_name}'.")
+
+
+@project_app.command("list")
+def list_projects(client_id: str):
+    """List all projects for a client"""
+    client_manager = ClientManager()
+    
+    # Check if client exists
+    client = client_manager.get_client(client_id)
+    if not client:
+        print(f"❌ Client with ID '{client_id}' not found.")
+        return
+    
+    projects = client_manager.list_projects(client_id)
+    
+    if not projects:
+        print(f"📂 No projects found for client '{client.name}'.")
+        return
+    
+    print_with_underline(f"\n📂 Projects for '{client.name}' ({len(projects)} found):")
+    
+    for project in projects:
+        print(f"ID: {project.id}")
+        print(f"Name: {project.name}")
+        print(f"Created: {project.created_date}")
+        print("-" * 40)
+
+
+@project_app.command("show")
+def show_project(project_id: str):
+    """Show detailed project information"""
+    client_manager = ClientManager()
+    project = client_manager.get_project(project_id)
+    
+    if not project:
+        print(f"❌ Project with ID '{project_id}' not found.")
+        return
+    
+    # Get client info
+    client = client_manager.get_client(project.client_id)
+    client_name = client.name if client else "Unknown Client"
+    
+    print_with_underline(f"\n📂 Project Details: {project.name}")
+    print(f"ID: {project.id}")
+    print(f"Name: {project.name}")
+    print(f"Client: {client_name} ({project.client_id})")
+    print(f"Created: {project.created_date}")
+
+
+@project_app.command("delete")
+def delete_project(project_id: str):
+    """Delete a project"""
+    client_manager = ClientManager()
+    project = client_manager.get_project(project_id)
+    
+    if not project:
+        print(f"❌ Project with ID '{project_id}' not found.")
+        return
+    
+    # Get client info for confirmation
+    client = client_manager.get_client(project.client_id)
+    client_name = client.name if client else "Unknown Client"
+    
+    print(f"⚠️  Are you sure you want to delete project '{project.name}' from client '{client_name}'?")
+    confirm = input("This action cannot be undone. Type 'yes' to confirm: ").strip().lower()
+    
+    if confirm == "yes":
+        if client_manager.delete_project(project_id):
+            print(f"✅ Project '{project.name}' deleted successfully.")
+        else:
+            print(f"❌ Failed to delete project '{project.name}'.")
     else:
         print("Deletion cancelled.")
 

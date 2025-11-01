@@ -123,3 +123,123 @@ def test_delete_client(temp_dir):
 
     # Verify client is gone
     assert client_manager.get_client(client_id) is None
+
+
+# Project functionality tests
+def test_add_and_get_project(temp_dir):
+    """Test adding and retrieving a project."""
+    client_manager = ClientManager(clients_dir=temp_dir)
+
+    # Add a client first
+    client_id = client_manager.add_client({
+        "name": "Test Client",
+        "email": "test@example.com",
+        "client_code": "TST"
+    })
+
+    # Add a project
+    project_id = client_manager.add_project(client_id, "Test Project")
+    assert project_id is not None
+
+    # Retrieve project
+    project = client_manager.get_project(project_id)
+    assert project is not None
+    assert project.name == "Test Project"
+    assert project.client_id == client_id
+
+    # Verify client has the project listed
+    client = client_manager.get_client(client_id)
+    assert client is not None
+    assert project_id in client.projects
+
+
+def test_list_projects(temp_dir):
+    """Test listing projects for a client."""
+    client_manager = ClientManager(clients_dir=temp_dir)
+
+    # Add a client
+    client_id = client_manager.add_client({
+        "name": "Test Client",
+        "email": "test@example.com",
+        "client_code": "TST"
+    })
+
+    # Initially no projects
+    projects = client_manager.list_projects(client_id)
+    assert len(projects) == 0
+
+    # Add some projects
+    project_id1 = client_manager.add_project(client_id, "Project Alpha")
+    project_id2 = client_manager.add_project(client_id, "Project Beta")
+
+    # Should have two projects
+    projects = client_manager.list_projects(client_id)
+    assert len(projects) == 2
+    
+    # Projects should be sorted by creation date (newest first)
+    project_names = [p.name for p in projects]
+    assert "Project Alpha" in project_names
+    assert "Project Beta" in project_names
+
+
+def test_delete_project(temp_dir):
+    """Test deleting a project."""
+    client_manager = ClientManager(clients_dir=temp_dir)
+
+    # Add client and project
+    client_id = client_manager.add_client({
+        "name": "Test Client",
+        "email": "test@example.com",
+        "client_code": "TST"
+    })
+    
+    project_id = client_manager.add_project(client_id, "To Delete Project")
+    assert project_id is not None  # Ensure project was created
+
+    # Verify project exists
+    assert client_manager.get_project(project_id) is not None
+
+    # Delete project
+    success = client_manager.delete_project(project_id)
+    assert success is True
+
+    # Verify project is gone
+    assert client_manager.get_project(project_id) is None
+
+    # Verify it's removed from client's project list
+    client = client_manager.get_client(client_id)
+    assert client is not None
+    assert project_id not in client.projects
+
+
+def test_add_project_nonexistent_client(temp_dir):
+    """Test adding a project to a nonexistent client."""
+    client_manager = ClientManager(clients_dir=temp_dir)
+
+    # Try to add project to non-existent client
+    project_id = client_manager.add_project("nonexistent_client", "Test Project")
+    assert project_id is None
+
+
+def test_project_id_generation(temp_dir):
+    """Test that project IDs are generated correctly and uniquely."""
+    client_manager = ClientManager(clients_dir=temp_dir)
+
+    # Add a client
+    client_id = client_manager.add_client({
+        "name": "Test Client",
+        "email": "test@example.com",
+        "client_code": "TST"
+    })
+
+    # Add projects with same name - should get unique IDs
+    project_id1 = client_manager.add_project(client_id, "Test Project")
+    project_id2 = client_manager.add_project(client_id, "Test Project")
+
+    assert project_id1 != project_id2
+    assert project_id1 is not None
+    assert project_id2 is not None
+
+    # Both projects should exist
+    assert client_manager.get_project(project_id1) is not None
+    assert client_manager.get_project(project_id2) is not None

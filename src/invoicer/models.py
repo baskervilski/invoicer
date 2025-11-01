@@ -16,6 +16,33 @@ from pydantic import (
 )
 
 
+class ProjectModel(BaseModel):
+    """Pydantic model for project data"""
+
+    id: str = Field(..., description="Unique project identifier")
+    name: str = Field(..., description="Project name", min_length=1)
+    client_id: str = Field(..., description="Associated client ID")
+    created_date: datetime = Field(
+        default_factory=datetime.now, description="Creation timestamp"
+    )
+
+    @field_validator("name")
+    def validate_name(cls, v):
+        """Ensure name is not empty string"""
+        if not v.strip():
+            raise ValueError("Project name cannot be empty")
+        return v.strip()
+
+    @field_serializer("created_date")
+    def serialize_datetime(self, v: datetime) -> str:
+        """Serialize datetime fields to ISO format"""
+        return v.isoformat()
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
+
+
 class ClientModel(BaseModel):
     """Pydantic model for client data"""
 
@@ -37,6 +64,9 @@ class ClientModel(BaseModel):
     total_invoices: int = Field(default=0, description="Total number of invoices", ge=0)
     total_amount: float = Field(
         default=0.0, description="Total invoiced amount", ge=0.0
+    )
+    projects: list[str] = Field(
+        default_factory=list, description="List of project IDs associated with this client"
     )
 
     @field_validator("client_code")
@@ -71,6 +101,9 @@ class ClientSummaryModel(BaseModel):
     created_date: datetime
     last_invoice_date: Optional[datetime] = None
     total_invoices: int = 0
+    projects: list[str] = Field(
+        default_factory=list, description="List of project IDs associated with this client"
+    )
 
 
 class InvoiceItemModel(BaseModel):
