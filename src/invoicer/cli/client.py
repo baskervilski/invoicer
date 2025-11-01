@@ -8,10 +8,10 @@ This tool allows you to manage client data from the command line.
 import typer
 from typing import Optional
 
-from invoicer.main import select_client
-from invoicer.utils import print_with_underline
-from .client_manager import ClientManager
-from .client_utils import create_client_interactive
+from ..main import select_client
+from ..utils import print_with_underline
+from ..client_manager import ClientManager
+from ..client_utils import create_client_interactive
 
 app = typer.Typer(
     name="client-cli",
@@ -274,7 +274,7 @@ def delete_project(project_id: str):
 @app.command("init-samples")
 def init_samples():
     """Create sample clients for testing"""
-    from .client_manager import create_sample_clients
+    from ..client_manager import create_sample_clients
 
     client_manager = ClientManager()
     create_sample_clients(client_manager)

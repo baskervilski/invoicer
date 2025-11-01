@@ -14,7 +14,7 @@ from decimal import Decimal
 from pydantic import ValidationError, EmailStr
 import json
 
-from .config import settings, InvoicerSettings
+from ..config import settings, InvoicerSettings
 
 app = typer.Typer(
     name="config",
@@ -149,7 +149,7 @@ def list_configurable():
     print("⚙️  Configurable Settings")
     print("=" * 50)
     
-        # Get field info from the pydantic model
+    # Get field info from the pydantic model
     model_fields = InvoicerSettings.model_fields
     
     categories = {

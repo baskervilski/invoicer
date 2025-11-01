@@ -5,7 +5,7 @@ Unit tests for client CLI delete functionality.
 from unittest.mock import Mock, patch, call
 from io import StringIO
 
-from invoicer.client_cli import delete
+from invoicer.cli.client import delete
 from invoicer.models import ClientModel
 
 
@@ -30,7 +30,7 @@ def test_delete_single_client(temp_dir):
     captured_output = StringIO()
 
     with (
-        patch("invoicer.client_cli.ClientManager", return_value=mock_client_manager),
+        patch("invoicer.cli.client.ClientManager", return_value=mock_client_manager),
         patch("builtins.input", return_value="yes"),
         patch("sys.stdout", captured_output),
     ):
@@ -70,7 +70,7 @@ def test_delete_multiple_clients(temp_dir):
     captured_output = StringIO()
 
     with (
-        patch("invoicer.client_cli.ClientManager", return_value=mock_client_manager),
+        patch("invoicer.cli.client.ClientManager", return_value=mock_client_manager),
         patch("builtins.input", return_value="yes"),
         patch("sys.stdout", captured_output),
     ):
@@ -113,7 +113,7 @@ def test_delete_with_spaces_in_list():
     captured_output = StringIO()
 
     with (
-        patch("invoicer.client_cli.ClientManager", return_value=mock_client_manager),
+        patch("invoicer.cli.client.ClientManager", return_value=mock_client_manager),
         patch("builtins.input", return_value="yes"),
         patch("sys.stdout", captured_output),
     ):
@@ -133,7 +133,7 @@ def test_delete_nonexistent_client():
     captured_output = StringIO()
 
     with (
-        patch("invoicer.client_cli.ClientManager", return_value=mock_client_manager),
+        patch("invoicer.cli.client.ClientManager", return_value=mock_client_manager),
         patch("sys.stdout", captured_output),
     ):
         delete("nonexistent")
@@ -170,7 +170,7 @@ def test_delete_mixed_existing_nonexistent():
     captured_output = StringIO()
 
     with (
-        patch("invoicer.client_cli.ClientManager", return_value=mock_client_manager),
+        patch("invoicer.cli.client.ClientManager", return_value=mock_client_manager),
         patch("builtins.input", return_value="yes"),
         patch("sys.stdout", captured_output),
     ):
@@ -207,7 +207,7 @@ def test_delete_user_cancels():
     captured_output = StringIO()
 
     with (
-        patch("invoicer.client_cli.ClientManager", return_value=mock_client_manager),
+        patch("invoicer.cli.client.ClientManager", return_value=mock_client_manager),
         patch("builtins.input", return_value="no"),
         patch("sys.stdout", captured_output),
     ):
@@ -238,7 +238,7 @@ def test_delete_failure():
     captured_output = StringIO()
 
     with (
-        patch("invoicer.client_cli.ClientManager", return_value=mock_client_manager),
+        patch("invoicer.cli.client.ClientManager", return_value=mock_client_manager),
         patch("builtins.input", return_value="yes"),
         patch("sys.stdout", captured_output),
     ):

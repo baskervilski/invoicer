@@ -8,7 +8,7 @@ from pathlib import Path
 import tempfile
 import os
 
-from src.invoicer.config_cli import app
+from src.invoicer.cli.config import app
 
 
 @pytest.fixture
@@ -115,7 +115,7 @@ def test_config_set_invalid_template(runner):
 
 def test_vat_rate_percentage_conversion():
     """Test VAT rate conversion from percentage to decimal."""
-    from src.invoicer.config_cli import validate_vat_rate
+    from src.invoicer.cli.config import validate_vat_rate
     
     # Test percentage format (should convert to decimal)
     assert validate_vat_rate("21") == 0.21
@@ -134,7 +134,7 @@ def test_vat_rate_percentage_conversion():
 
 def test_currency_validation():
     """Test currency code validation."""
-    from src.invoicer.config_cli import validate_currency_code
+    from src.invoicer.cli.config import validate_currency_code
     
     # Valid currency codes
     assert validate_currency_code("USD") == "USD"
@@ -152,7 +152,7 @@ def test_currency_validation():
 
 def test_email_validation():
     """Test email validation."""
-    from src.invoicer.config_cli import validate_email
+    from src.invoicer.cli.config import validate_email
     
     # Valid emails
     assert validate_email("test@example.com") == True
@@ -168,7 +168,7 @@ def test_email_validation():
 
 def test_phone_validation():
     """Test phone number validation."""
-    from src.invoicer.config_cli import validate_phone
+    from src.invoicer.cli.config import validate_phone
     
     # Valid phone numbers
     assert validate_phone("+1 (555) 123-4567") == True
@@ -184,7 +184,7 @@ def test_phone_validation():
 
 def test_template_validation():
     """Test invoice template validation."""
-    from src.invoicer.config_cli import validate_template
+    from src.invoicer.cli.config import validate_template
     
     # Valid templates
     assert validate_template("INV-{year}{month:02d}-{client_code}") == True

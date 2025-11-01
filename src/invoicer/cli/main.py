@@ -11,11 +11,11 @@ from pathlib import Path
 import sys
 
 # Import subcommands
-from . import main as invoicer_main
-from . import demo as invoicer_demo
-from . import generate_samples
-from .cli.client import app as client_app
-from .cli.config import app as config_app
+from .. import main as invoicer_main
+from .. import demo as invoicer_demo
+from .. import generate_samples
+from .client import app as client_app
+from .config import app as config_app
 
 app = typer.Typer(
     name="invoicer",
@@ -63,9 +63,6 @@ def samples():
     except Exception as e:
         print(f"❌ Error generating samples: {e}")
         sys.exit(1)
-
-
-
 
 
 @app.command()
@@ -157,7 +154,7 @@ MICROSOFT_REDIRECT_URI=http://localhost:8080/callback
     # Create sample clients
     print("📝 Creating sample clients...")
     try:
-        from .client_manager import ClientManager, create_sample_clients
+        from ..client_manager import ClientManager, create_sample_clients
 
         client_manager = ClientManager()
         create_sample_clients(client_manager)
