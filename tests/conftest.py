@@ -106,7 +106,7 @@ def existing_client():
 def sample_invoice():
     """Sample invoice for testing."""
     client_info = InvoiceClientInfoModel(
-        name="Test Client", email="client@test.com", client_code="TST"
+        name="Test Client", email="client@test.com", client_code="TST", client_id="test", address="123 Test St\nTest City, TS 12345"
     )
 
     line_item = InvoiceItemModel(

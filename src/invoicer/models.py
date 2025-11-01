@@ -315,10 +315,10 @@ class InvoiceClientInfoModel(BaseModel):
     """Client information embedded in invoice data using standardized field types."""
 
     name: ClientNameField
-    email: ClientEmailField
+    client_id: str
     client_code: ClientCodeField
-    address: OptionalNotesField = ""
-    client_id: OptionalTextField = None
+    email: ClientEmailField
+    address: str
 
 
 class InvoiceModel(BaseModel):

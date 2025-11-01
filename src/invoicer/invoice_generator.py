@@ -176,7 +176,7 @@ class InvoiceGenerator:
 
         # Bill To section
         client_info = invoice_data.client_info
-        client_address = client_info.address or "Client Address\nCity, State ZIP"
+        client_address = client_info.address
 
         details_data = [
             [Paragraph("<b>Bill To:</b>", self.styles["Normal"]), ""],
@@ -302,7 +302,7 @@ class InvoiceGenerator:
             totals_data.append(
                 [
                     "",
-                    f"Tax ({tax_rate * 100:.1f}%):",
+                    f"VAT ({tax_rate * 100:.1f}%):",
                     f"{self.settings.currency_symbol}{tax_amount:,.2f}",
                 ]
             )
