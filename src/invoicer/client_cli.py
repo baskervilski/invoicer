@@ -81,8 +81,7 @@ def show(client_id: str):
         print(f"Client with ID '{client_id}' not found.")
         return
 
-    print(f"\n👤 Client Details: {client.name}")
-    print("=" * 50)
+    print_with_underline(f"\n👤 Client Details: {client.name}")
     print(f"ID: {client.id}")
     print(f"Name: {client.name}")
     print(f"Email: {client.email}")

@@ -407,16 +407,19 @@ def create_sample_invoice_data(
     client_code: str = "SAM",
     days_worked: int = 20,
     month_year: str | None = None,
+    invoice_date: datetime | None = None,
 ) -> InvoiceModel:
     """
     Create sample invoice data for testing
 
     Args:
+        settings: Application settings
         client_name: Name of the client
         client_email: Client's email address
         client_code: Client's code (e.g., "ACM", "TSS")
         days_worked: Number of days worked
         month_year: Month and year for the invoice (e.g., "October 2024")
+        invoice_date: Invoice date (defaults to current date if None)
 
     Returns:
         InvoiceModel: Invoice data
@@ -465,7 +468,7 @@ def create_sample_invoice_data(
     # Create invoice model
     return InvoiceModel(
         invoice_number=invoice_number,
-        invoice_date=datetime.now(),
+        invoice_date=invoice_date or datetime.now(),
         due_date="Net 30 days",
         client_info=client_info,
         line_items=line_items,

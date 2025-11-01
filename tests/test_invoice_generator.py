@@ -85,3 +85,40 @@ def test_create_sample_invoice_with_defaults(mock_settings: InvoicerSettings):
     assert invoice.days_worked == 20
     assert invoice.subtotal > 0
     assert invoice.total_amount > 0
+
+
+def test_create_sample_invoice_with_custom_date(mock_settings: InvoicerSettings):
+    """Test creating sample invoice with custom invoice date."""
+    custom_date = datetime(2025, 11, 30, 23, 59, 59)
+
+    invoice = create_sample_invoice_data(
+        settings=mock_settings,
+        client_name="Test Client",
+        client_email="test@example.com",
+        client_code="TST",
+        days_worked=5,
+        month_year="November 2025",
+        invoice_date=custom_date,
+    )
+
+    assert invoice.invoice_date == custom_date
+    assert invoice.client_info.name == "Test Client"
+    assert invoice.days_worked == 5
+
+
+def test_create_sample_invoice_without_custom_date(mock_settings: InvoicerSettings):
+    """Test creating sample invoice without custom date uses current time."""
+    before_creation = datetime.now()
+
+    invoice = create_sample_invoice_data(
+        settings=mock_settings,
+        client_name="Test Client",
+        client_email="test@example.com",
+        client_code="TST",
+        days_worked=3,
+    )
+
+    after_creation = datetime.now()
+
+    # Invoice date should be between before and after creation times
+    assert before_creation <= invoice.invoice_date <= after_creation

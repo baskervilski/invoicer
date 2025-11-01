@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 from datetime import datetime
 from typing import Optional
+import calendar
 
 from invoicer.models import ClientModel, InvoiceModel
 from invoicer.utils import print_with_underline
@@ -18,6 +19,32 @@ from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
 from .email_sender import EmailSender
 from .client_manager import ClientManager, create_sample_clients
 from .config import settings
+
+
+def get_last_day_of_month(month_year_str: str) -> datetime:
+    """
+    Get the last day of the specified month.
+
+    Args:
+        month_year_str: Month/year string like "November 2025" or "Nov 2025"
+
+    Returns:
+        datetime: Last day of the month at 23:59:59
+    """
+    try:
+        # Parse the month/year string
+        month_year = datetime.strptime(month_year_str, "%B %Y")
+    except ValueError:
+        try:
+            # Try abbreviated month format
+            month_year = datetime.strptime(month_year_str, "%b %Y")
+        except ValueError:
+            # Fallback to current month if parsing fails
+            month_year = datetime.now()
+
+    # Get the last day of the month
+    last_day = calendar.monthrange(month_year.year, month_year.month)[1]
+    return datetime(month_year.year, month_year.month, last_day, 23, 59, 59)
 
 
 def main():
@@ -222,6 +249,27 @@ def get_invoice_details() -> Optional[InvoiceModel]:
         if not project_description:
             project_description = default_description
 
+        # Invoice date selection
+        print("\n📅 Invoice Date Selection:")
+        current_date = datetime.now()
+        last_day_of_month = get_last_day_of_month(month_year)
+
+        print(
+            f"1. Last day of {month_year} ({last_day_of_month.strftime('%Y-%m-%d')}) [default]"
+        )
+        print(f"2. Today ({current_date.strftime('%Y-%m-%d')})")
+
+        while True:
+            choice = input("Choose invoice date ([1]/2): ").strip() or "1"
+            if choice == "1":
+                invoice_date = last_day_of_month
+                break
+            elif choice == "2":
+                invoice_date = current_date
+                break
+            else:
+                print("Invalid choice. Please enter 1 or 2.")
+
         # Calculate totals for display
         total_hours = days_worked * settings.hours_per_day
         subtotal = total_hours * settings.hourly_rate
@@ -245,7 +293,9 @@ def get_invoice_details() -> Optional[InvoiceModel]:
         print(f"   Total amount: {settings.currency_symbol}{total_with_vat:,.2f}")
 
         # Confirm
-        confirm = input("\nProceed with invoice creation? (y/n): ").lower().strip()
+        confirm = (
+            input("\nProceed with invoice creation? ([y]/n): ").lower().strip() or "y"
+        )
         if confirm not in ["y", "yes"]:
             return None
 
@@ -257,6 +307,7 @@ def get_invoice_details() -> Optional[InvoiceModel]:
             client_code=client_data.client_code,
             days_worked=days_worked,
             month_year=month_year,
+            invoice_date=invoice_date,
         )
 
         # Update the project description

@@ -4,8 +4,9 @@ Unit tests for main.py functions - testing main functionality.
 
 from unittest.mock import patch, MagicMock
 from pathlib import Path
+from datetime import datetime
 
-from invoicer.main import send_invoice_email
+from invoicer.main import send_invoice_email, get_last_day_of_month
 
 
 @patch("invoicer.main.EmailSender")
@@ -60,3 +61,51 @@ def test_send_invoice_email_send_failure(mock_email_sender_class, sample_invoice
 
     assert result is False
     mock_sender.send_email.assert_called_once()
+
+
+def test_get_last_day_of_month():
+    """Test getting the last day of various months."""
+    # Test regular month
+    result = get_last_day_of_month("November 2025")
+    assert result.year == 2025
+    assert result.month == 11
+    assert result.day == 30
+    assert result.hour == 23
+    assert result.minute == 59
+    assert result.second == 59
+
+    # Test February in leap year
+    result = get_last_day_of_month("February 2024")
+    assert result.year == 2024
+    assert result.month == 2
+    assert result.day == 29
+
+    # Test February in non-leap year
+    result = get_last_day_of_month("February 2025")
+    assert result.year == 2025
+    assert result.month == 2
+    assert result.day == 28
+
+    # Test December
+    result = get_last_day_of_month("December 2025")
+    assert result.year == 2025
+    assert result.month == 12
+    assert result.day == 31
+
+
+def test_get_last_day_of_month_abbreviated():
+    """Test getting the last day with abbreviated month names."""
+    result = get_last_day_of_month("Nov 2025")
+    assert result.year == 2025
+    assert result.month == 11
+    assert result.day == 30
+
+
+def test_get_last_day_of_month_invalid_input():
+    """Test handling of invalid input defaults to current month."""
+    result = get_last_day_of_month("Invalid Month 2025")
+    current_date = datetime.now()
+
+    # Should default to current month and year
+    assert result.year == current_date.year
+    assert result.month == current_date.month
