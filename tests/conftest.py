@@ -6,6 +6,7 @@ import pytest
 import tempfile
 import shutil
 from pathlib import Path
+from datetime import datetime
 from unittest.mock import patch
 
 from invoicer.config import InvoicerSettings
@@ -57,6 +58,47 @@ def sample_client():
         name="Test Client Corp",
         email="client@test.com",
         client_code="TST",
+        created_date=datetime(2023, 1, 1),
+        projects=[],
+    )
+
+
+@pytest.fixture
+def sample_client_1():
+    """First sample client for multi-client testing."""
+    return ClientModel(
+        id="client1",
+        name="Client One",
+        email="one@example.com",
+        client_code="ONE",
+        created_date=datetime(2023, 1, 1),
+        projects=[],
+    )
+
+
+@pytest.fixture
+def sample_client_2():
+    """Second sample client for multi-client testing."""
+    return ClientModel(
+        id="client2",
+        name="Client Two",
+        email="two@example.com",
+        client_code="TWO",
+        created_date=datetime(2023, 1, 1),
+        projects=[],
+    )
+
+
+@pytest.fixture
+def existing_client():
+    """Existing client for mixed scenario testing."""
+    return ClientModel(
+        id="existing",
+        name="Existing Client",
+        email="existing@example.com",
+        client_code="EXT",
+        created_date=datetime(2023, 1, 1),
+        projects=[],
     )
 
 
@@ -73,8 +115,10 @@ def sample_invoice():
 
     return InvoiceModel(
         invoice_number="INV-001",
+        invoice_date=datetime(2023, 1, 1),
         client_info=client_info,
         line_items=[line_item],
         subtotal=8000.0,
         total_amount=8000.0,
+        payment_terms="Net 30 days",
     )

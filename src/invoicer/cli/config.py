@@ -3,16 +3,16 @@
 Configuration CLI for the invoicer application.
 
 This module provides commands to view and modify configuration settings
-with proper validation.
+with proper validation using Pydantic field validation.
 """
 
-import typer
-from pathlib import Path
-from typing import Optional, List, Annotated
-import re
-from decimal import Decimal
-from pydantic import ValidationError, EmailStr
 import json
+from pathlib import Path
+from typing import Annotated, List, Optional, get_args, get_origin
+from pydantic import ValidationError, EmailStr
+from pydantic.fields import FieldInfo
+
+import typer
 
 from ..config import settings, InvoicerSettings
 
@@ -23,86 +23,46 @@ app = typer.Typer(
 )
 
 
-def validate_email(email: str) -> bool:
-    """Validate email address format."""
+def get_field_info(field_name: str) -> FieldInfo:
+    """Get field info for a setting from the Pydantic model."""
+    return InvoicerSettings.model_fields[field_name]
+
+
+def validate_field_value(field_name: str, value: str):
+    """Validate a field value using Pydantic's validation."""
     try:
-        # Use pydantic's email validation
-        from pydantic import BaseModel
-        
-        class EmailModel(BaseModel):
-            email: EmailStr
-        
-        EmailModel(email=email)
-        return True
-    except (ValidationError, Exception):
-        return False
+        # Create a temporary model instance with just this field to validate
+        temp_data = {field_name: value}
+        temp_instance = InvoicerSettings(**temp_data)
+        return getattr(temp_instance, field_name)
+    except ValidationError as e:
+        # Extract the error message for this field
+        for error in e.errors():
+            if error['loc'] == (field_name,):
+                raise typer.BadParameter(error['msg'])
+        raise typer.BadParameter(f"Validation failed: {str(e)}")
 
 
-def validate_positive_float(value: str, field_name: str) -> float:
-    """Validate that a string represents a positive float."""
-    try:
-        float_val = float(value)
-        if float_val <= 0:
-            raise typer.BadParameter(f"{field_name} must be greater than 0")
-        return float_val
-    except ValueError:
-        raise typer.BadParameter(f"{field_name} must be a valid number")
-
-
-def validate_vat_rate(value: str) -> float:
-    """Validate VAT rate (0-100% or 0.0-1.0)."""
-    try:
-        float_val = float(value)
-        # Accept both percentage (0-100) and decimal (0.0-1.0) formats
-        if 1 < float_val <= 100:
-            float_val = float_val / 100  # Convert percentage to decimal
-        elif not (0 <= float_val <= 1):
-            raise typer.BadParameter("VAT rate must be between 0-100% or 0.0-1.0")
-        return float_val
-    except ValueError:
-        raise typer.BadParameter("VAT rate must be a valid number")
-
-
-def validate_phone(value: str) -> bool:
-    """Validate phone number format (basic check)."""
-    # Allow common phone formats: +1 (555) 123-4567, +1-555-123-4567, etc.
-    phone_pattern = r'^[\+]?[1-9][\d\s\-\(\)]{7,15}$'
-    return bool(re.match(phone_pattern, value.strip()))
-
-
-def validate_currency_code(value: str) -> str:
-    """Validate currency code (3 uppercase letters)."""
-    if not re.match(r'^[A-Z]{3}$', value.upper()):
-        raise typer.BadParameter("Currency code must be 3 uppercase letters (e.g., USD, EUR, GBP)")
-    return value.upper()
-
-
-def validate_template(template: str) -> bool:
-    """Validate invoice number template format."""
-    # Check for valid template variables
-    valid_vars = {'year', 'month', 'day', 'client_code', 'invoice_number'}
+def get_field_type_name(field_name: str) -> str:
+    """Get a human-readable type name for a field."""
+    annotation = InvoicerSettings.model_fields[field_name].annotation
     
-    # Find all variables in template
-    import re
-    found_vars = set(re.findall(r'\{(\w+)(?::.*?)?\}', template))
-    
-    # Check if all variables are valid
-    invalid_vars = found_vars - valid_vars
-    if invalid_vars:
-        return False
-    
-    # Try to format with sample data
-    try:
-        template.format(
-            year=2024,
-            month=12,
-            day=31,
-            client_code='TST',
-            invoice_number='001'
-        )
-        return True
-    except (KeyError, ValueError):
-        return False
+    if get_origin(annotation) is Annotated:
+        base_type = get_args(annotation)[0]
+        if base_type is EmailStr:
+            return "email"
+        elif base_type is Path:
+            return "path"
+        elif base_type is float:
+            return "number"
+        elif base_type is list:
+            return "list"
+        else:
+            return str(base_type.__name__) if hasattr(base_type, '__name__') else str(base_type)
+    elif annotation is not None:
+        return str(annotation.__name__)
+    else:
+        return str(annotation)
 
 
 @app.command("show")
@@ -152,43 +112,54 @@ def list_configurable():
     # Get field info from the pydantic model
     model_fields = InvoicerSettings.model_fields
     
-    categories = {
-        'Company Information': [
-            'company_name', 'company_email', 'company_phone', 'company_address'
-        ],
-        'Invoice Settings': [
-            'hourly_rate', 'hours_per_day', 'currency', 'currency_symbol', 
-            'vat_rate', 'invoice_number_template'
-        ],
-        'Microsoft API': [
-            'microsoft_client_id', 'microsoft_client_secret', 'microsoft_tenant_id',
-            'microsoft_redirect_uri'
-        ],
-        'Directories': [
-            'invoices_dir', 'clients_dir'
-        ]
-    }
+    # Dynamically categorize fields based on naming patterns
+    categories = {}
+    for field_name in model_fields.keys():
+        if field_name.startswith('company_'):
+            category = 'Company Information'
+        elif field_name.startswith('microsoft_'):
+            category = 'Microsoft API'
+        elif field_name.endswith('_dir'):
+            category = 'Directories'
+        elif field_name in ['hourly_rate', 'hours_per_day', 'currency', 'currency_symbol', 'vat_rate', 'invoice_number_template']:
+            category = 'Invoice Settings'
+        else:
+            category = 'Other Settings'
+        
+        if category not in categories:
+            categories[category] = []
+        categories[category].append(field_name)
     
-    for category, fields in categories.items():
+    for category, fields in sorted(categories.items()):
         print(f"\n📋 {category}:")
-        for field_name in fields:
-            if field_name in model_fields:
-                field_info = model_fields[field_name]
-                current_value = getattr(settings, field_name)
-                
-                # Hide sensitive values
-                if 'secret' in field_name.lower() and current_value:
-                    display_value = "***[HIDDEN]***"
-                elif isinstance(current_value, Path):
-                    display_value = str(current_value)
+        for field_name in sorted(fields):
+            field_info = get_field_info(field_name)
+            field_type = get_field_type_name(field_name)
+            current_value = getattr(settings, field_name)
+            
+            # Hide sensitive values
+            if 'secret' in field_name.lower() and current_value:
+                display_value = "***[HIDDEN]***"
+            elif isinstance(current_value, Path):
+                display_value = str(current_value)
+            elif isinstance(current_value, list):
+                display_value = ", ".join(str(item) for item in current_value)
+            else:
+                display_value = current_value
+            
+            print(f"  {field_name}:")
+            print(f"    Current: {display_value}")
+            print(f"    Type: {field_type}")
+            print(f"    Description: {field_info.description}")
+            
+            # Show default value if available
+            if hasattr(field_info, 'default') and field_info.default is not None:
+                if callable(field_info.default):
+                    print(f"    Default: <computed>")
                 else:
-                    display_value = current_value
-                
-                print(f"  {field_name}:")
-                print(f"    Current: {display_value}")
-                print(f"    Description: {field_info.description}")
-                if hasattr(field_info, 'default'):
                     print(f"    Default: {field_info.default}")
+            
+            # Note: Field constraints would be shown here if needed
 
 
 @app.command("set")
@@ -206,51 +177,18 @@ def set_config(
         print(f"Available settings: {', '.join(available_settings)}")
         raise typer.Exit(1)
     
-    # Get current value
+    # Get current value and field info
     current_value = getattr(settings, setting)
-    field_info = InvoicerSettings.model_fields[setting]
+    field_info = get_field_info(setting)
+    field_type = get_field_type_name(setting)
     
-    # Validate the new value based on field type and constraints
+    # Validate the new value using Pydantic's validation
     try:
-        if setting == 'company_email':
-            if not validate_email(value):
-                raise typer.BadParameter("Invalid email address format")
-            validated_value = value
-            
-        elif setting == 'company_phone':
-            if not validate_phone(value):
-                raise typer.BadParameter("Invalid phone number format")
-            validated_value = value
-            
-        elif setting in ['hourly_rate', 'hours_per_day']:
-            validated_value = validate_positive_float(value, setting.replace('_', ' ').title())
-            
-        elif setting == 'vat_rate':
-            validated_value = validate_vat_rate(value)
-            
-        elif setting == 'currency':
-            validated_value = validate_currency_code(value)
-            
-        elif setting == 'invoice_number_template':
-            if not validate_template(value):
-                raise typer.BadParameter(
-                    "Invalid template format. Available variables: "
-                    "{year}, {month}, {day}, {client_code}, {invoice_number}"
-                )
-            validated_value = value
-            
-        elif setting in ['invoices_dir', 'clients_dir']:
-            path_value = Path(value)
-            if not path_value.is_absolute():
-                path_value = Path.cwd() / path_value
-            validated_value = path_value
-            
-        else:
-            # For other string fields, just use the value as-is
-            validated_value = value
-    
+        validated_value = validate_field_value(setting, value)
     except typer.BadParameter as e:
-        print(f"❌ Validation error: {e}")
+        print(f"❌ Validation error for {setting} ({field_type}): {e}")
+        if field_info.description:
+            print(f"💡 Field description: {field_info.description}")
         raise typer.Exit(1)
     
     # Show what will change
@@ -340,53 +278,52 @@ def validate_config():
     errors = []
     warnings = []
     
-    # Validate company information
-    if not settings.company_name or settings.company_name == "Your Company Name":
-        warnings.append("Company name is not set or using default value")
-    
-    if not validate_email(str(settings.company_email)):
-        errors.append("Company email is invalid")
-    elif str(settings.company_email) == "your.email@example.com":
-        warnings.append("Company email is using default placeholder value")
-    
-    if not validate_phone(settings.company_phone):
-        errors.append("Company phone number format is invalid")
-    
-    # Validate invoice settings
-    if settings.hourly_rate <= 0:
-        errors.append("Hourly rate must be greater than 0")
-    
-    if settings.hours_per_day <= 0:
-        errors.append("Hours per day must be greater than 0")
-    
-    if not (0 <= settings.vat_rate <= 1):
-        errors.append("VAT rate must be between 0.0 and 1.0")
-    
-    if not validate_template(settings.invoice_number_template):
-        errors.append("Invoice number template is invalid")
-    
-    # Validate Microsoft API settings
-    api_fields = [settings.microsoft_client_id, settings.microsoft_client_secret, settings.microsoft_tenant_id]
-    if any(api_fields):  # If any are set, all should be set
-        if not all(api_fields):
-            warnings.append("Microsoft API configuration is incomplete (some fields missing)")
+    # Try to validate the entire configuration using Pydantic
+    try:
+        # Create a new instance to trigger validation
+        current_dict = settings.model_dump()
+        InvoicerSettings(**current_dict)
+        
+        # Check for default/placeholder values
+        field_defaults = {
+            'company_name': 'Your Company Name',
+            'company_email': 'your.email@example.com',
+            'company_phone': '+1 (555) 123-4567',
+        }
+        
+        for field_name, default_value in field_defaults.items():
+            current_value = getattr(settings, field_name)
+            if str(current_value) == default_value:
+                warnings.append(f"{field_name.replace('_', ' ').title()} is using default placeholder value")
+        
+        # Check Microsoft API configuration
+        api_fields = [settings.microsoft_client_id, settings.microsoft_client_secret, settings.microsoft_tenant_id]
+        if any(api_fields):  # If any are set, all should be set
+            if not all(api_fields):
+                warnings.append("Microsoft API configuration is incomplete (some fields missing)")
+            else:
+                # Check for placeholder values
+                if any(field and 'your-' in str(field) for field in api_fields):
+                    warnings.append("Microsoft API configuration contains placeholder values")
         else:
-            # Check for placeholder values
-            if any(field and 'your-' in str(field) for field in api_fields):
-                warnings.append("Microsoft API configuration contains placeholder values")
-    else:
-        warnings.append("Microsoft API not configured (email sending will not work)")
-    
-    # Validate directories
-    for dir_name, dir_path in [
-        ("Invoices", settings.invoices_dir),
-        ("Clients", settings.clients_dir),
-        ("Templates", settings.templates_dir)
-    ]:
-        if not dir_path.exists():
-            warnings.append(f"{dir_name} directory does not exist: {dir_path}")
-        elif not dir_path.is_dir():
-            errors.append(f"{dir_name} path exists but is not a directory: {dir_path}")
+            warnings.append("Microsoft API not configured (email sending will not work)")
+        
+        # Validate directories exist
+        for dir_name, field_name in [
+            ("Invoices", "invoices_dir"),
+            ("Clients", "clients_dir"), 
+            ("Templates", "templates_dir")
+        ]:
+            dir_path = getattr(settings, field_name)
+            if not dir_path.exists():
+                warnings.append(f"{dir_name} directory does not exist: {dir_path}")
+            elif not dir_path.is_dir():
+                errors.append(f"{dir_name} path exists but is not a directory: {dir_path}")
+                
+    except ValidationError as e:
+        for error in e.errors():
+            field_name = '.'.join(str(loc) for loc in error['loc'])
+            errors.append(f"{field_name}: {error['msg']}")
     
     # Print results
     if errors:
@@ -440,9 +377,16 @@ def reset_config(
             raise typer.Exit(1)
         
         # Get default value
-        field_info = InvoicerSettings.model_fields[setting]
-        if hasattr(field_info, 'default'):
+        field_info = get_field_info(setting)
+        if hasattr(field_info, 'default') and field_info.default is not None:
             default_value = field_info.default
+            if callable(default_value):
+                # For factory defaults, we need to call the function
+                try:
+                    default_value = default_value()
+                except Exception as e:
+                    print(f"❌ Cannot compute default value for {setting}: {e}")
+                    raise typer.Exit(1)
         else:
             print(f"❌ No default value available for {setting}")
             raise typer.Exit(1)
