@@ -12,9 +12,9 @@ from datetime import datetime
 from typing import Optional
 
 from invoicer.models import ClientModel, InvoiceModel
+from invoicer.utils import print_with_underline
 
 from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
-from .client_utils import create_client_interactive
 from .email_sender import EmailSender
 from .client_manager import ClientManager, create_sample_clients
 from .config import settings
@@ -60,9 +60,9 @@ def main():
         sys.exit(1)
 
 
-def select_or_create_client() -> Optional[ClientModel]:
+def select_client() -> Optional[ClientModel]:
     """
-    Allow user to select existing client or create new one
+    Allow user to select from existing clients only
 
     Returns:
         Optional[ClientModel]: Client data or None if cancelled
@@ -73,36 +73,35 @@ def select_or_create_client() -> Optional[ClientModel]:
     existing_clients = client_manager.list_clients()
 
     if not existing_clients:
-        print("📝 No existing clients found. Let's create your first client!")
-        return create_new_client(client_manager)
+        print("❌ No existing clients found!")
+        print("\n💡 To create clients, use one of these methods:")
+        print("   • Command line: invoicer client add")
+        print("   • Python API: from client_utils import create_client_interactive")
+        print("\nPlease create at least one client before generating invoices.")
+        return None
 
     # Show options
-    print("\n👥 Client Selection")
-    print("=" * 50)
+    print_with_underline("\n👥 Client Selection")
     print("Choose an option:")
     print("1. Select from existing clients")
-    print("2. Create new client")
-    print("3. Search clients")
+    print("2. Search clients")
 
     while True:
-        choice = input("\nEnter your choice (1-3): ").strip()
+        choice = input("\nEnter your choice (1-2): ").strip()
 
         if choice == "1":
             return select_existing_client(client_manager)
         elif choice == "2":
-            return create_new_client(client_manager)
-        elif choice == "3":
             return search_and_select_client(client_manager)
         else:
-            print("Invalid choice. Please enter 1, 2, or 3.")
+            print("Invalid choice. Please enter 1 or 2.")
 
 
 def select_existing_client(client_manager: ClientManager) -> Optional[ClientModel]:
     """Select from existing clients"""
     clients = client_manager.list_clients()
 
-    print(f"\n📋 Existing Clients ({len(clients)} found):")
-    print("=" * 50)
+    print_with_underline(f"\n📋 Existing Clients ({len(clients)} found):")
 
     for i, client in enumerate(clients, 1):
         if client.last_invoice_date:
@@ -123,7 +122,7 @@ def select_existing_client(client_manager: ClientManager) -> Optional[ClientMode
             ).strip()
 
             if choice.lower() == "b":
-                return select_or_create_client()
+                return select_client()
 
             client_index = int(choice) - 1
             if 0 <= client_index < len(clients):
@@ -143,7 +142,7 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[ClientMo
     """Search and select client"""
     query = input("🔍 Enter search term (name, email, or company): ").strip()
     if not query:
-        return select_or_create_client()
+        return select_client()
 
     results = client_manager.search_clients(query)
 
@@ -153,10 +152,9 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[ClientMo
         if retry == "y":
             return search_and_select_client(client_manager)
         else:
-            return select_or_create_client()
+            return select_client()
 
-    print(f"\n🔍 Search Results for '{query}' ({len(results)} found):")
-    print("=" * 50)
+    print_with_underline(f"\n🔍 Search Results for '{query}' ({len(results)} found):")
 
     for i, client in enumerate(results, 1):
         print(f"{i:2d}. {client.name} ({client.email})")
@@ -168,7 +166,7 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[ClientMo
             ).strip()
 
             if choice.lower() == "b":
-                return select_or_create_client()
+                return select_client()
 
             client_index = int(choice) - 1
             if 0 <= client_index < len(results):
@@ -183,11 +181,6 @@ def search_and_select_client(client_manager: ClientManager) -> Optional[ClientMo
             print("Please enter a valid number or 'b' to go back.")
 
 
-def create_new_client(client_manager: ClientManager) -> Optional[ClientModel]:
-    """Create a new client"""
-    return create_client_interactive(client_manager, "Create New Client")
-
-
 def get_invoice_details() -> Optional[InvoiceModel]:
     """
     Get invoice details from user input
@@ -196,13 +189,12 @@ def get_invoice_details() -> Optional[InvoiceModel]:
         Optional[InvoiceModel]: Invoice data or None if cancelled
     """
     try:
-        # First, select or create client
-        client_data = select_or_create_client()
+        # First, select client
+        client_data = select_client()
         if not client_data:
             return None
 
-        print(f"\n📋 Creating invoice for: {client_data.name}")
-        print("=" * 50)
+        print_with_underline(f"\n📋 Creating invoice for: {client_data.name}")
 
         # Days worked
         while True:
@@ -233,6 +225,8 @@ def get_invoice_details() -> Optional[InvoiceModel]:
         # Calculate totals for display
         total_hours = days_worked * settings.hours_per_day
         subtotal = total_hours * settings.hourly_rate
+        vat_amount = subtotal * settings.vat_rate
+        total_with_vat = subtotal + vat_amount
 
         # Display summary
         print("\n📋 Invoice Summary:")
@@ -243,7 +237,12 @@ def get_invoice_details() -> Optional[InvoiceModel]:
         print(f"   Hours per day: {settings.hours_per_day:,.1f}")
         print(f"   Hourly rate: {settings.currency_symbol}{settings.hourly_rate:,.2f}")
         print(f"   Total hours: {total_hours:,.1f}")
-        print(f"   Total amount: {settings.currency_symbol}{subtotal:,.2f}")
+        print(f"   Subtotal: {settings.currency_symbol}{subtotal:,.2f}")
+        if settings.vat_rate > 0:
+            print(
+                f"   VAT ({settings.vat_rate * 100:.1f}%): {settings.currency_symbol}{vat_amount:,.2f}"
+            )
+        print(f"   Total amount: {settings.currency_symbol}{total_with_vat:,.2f}")
 
         # Confirm
         confirm = input("\nProceed with invoice creation? (y/n): ").lower().strip()
@@ -392,6 +391,7 @@ HOURLY_RATE=75.0
 HOURS_PER_DAY=8.0
 CURRENCY=EUR
 CURRENCY_SYMBOL=€
+VAT_RATE=0.21
 
 # Microsoft Graph API Settings (Required for email)
 # Get these from your Microsoft App Registration

@@ -6,6 +6,8 @@ This tool allows you to manage client data from the command line.
 """
 
 import typer
+
+from invoicer.utils import print_with_underline
 from .client_manager import ClientManager
 from .client_utils import create_client_interactive
 
@@ -26,8 +28,7 @@ def list_clients():
         print("No clients found. Use 'add' to create your first client.")
         return
 
-    print(f"\n📋 All Clients ({len(clients)} found):")
-    print("=" * 70)
+    print_with_underline(f"\n📋 All Clients ({len(clients)} found):")
 
     for client in clients:
         print(f"ID: {client.id}")
@@ -43,7 +44,7 @@ def add():
     """Add a new client (interactive)"""
     client_manager = ClientManager()
 
-    created_client = create_client_interactive(client_manager, "Add New Client")
+    created_client = create_client_interactive(client_manager)
 
     if created_client:
         print(f"Client created with ID: {created_client.id}")
@@ -61,8 +62,7 @@ def search(query: str):
         print(f"No clients found matching '{query}'")
         return
 
-    print(f"\n🔍 Search Results for '{query}' ({len(results)} found):")
-    print("=" * 60)
+    print_with_underline(f"\n🔍 Search Results for '{query}' ({len(results)} found):")
 
     for client in results:
         print(f"ID: {client.id}")

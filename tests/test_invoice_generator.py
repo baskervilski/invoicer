@@ -50,8 +50,13 @@ def test_create_sample_invoice_data_basic(mock_settings: InvoicerSettings):
     # Check financial calculations
     expected_hourly_rate = mock_settings.hourly_rate
     expected_subtotal = days_worked * h_per_day * expected_hourly_rate
+    expected_vat = expected_subtotal * mock_settings.vat_rate
+    expected_total = expected_subtotal + expected_vat
+
     assert invoice.subtotal == expected_subtotal, (mock_settings, invoice.model_dump())
-    assert invoice.total_amount == expected_subtotal
+    assert invoice.tax_rate == mock_settings.vat_rate
+    assert invoice.tax_amount == expected_vat
+    assert invoice.total_amount == expected_total
 
 
 def test_invoice_generator_initialization(mock_settings: InvoicerSettings):

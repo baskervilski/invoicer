@@ -32,6 +32,9 @@ class InvoicerSettings(BaseSettings):
     hours_per_day: float = Field(default=8.0, description="Hours per day", gt=0)
     currency: str = Field(default="EUR", description="Currency code")
     currency_symbol: str = Field(default="€", description="Currency symbol")
+    vat_rate: float = Field(
+        default=0.21, description="VAT rate (0.21 for 21%)", ge=0, le=1
+    )
     invoice_number_template: str = Field(
         default="INV-{year}{month:02d}-{client_code}",
         description="Invoice number template",
@@ -99,6 +102,7 @@ HOURLY_RATE = settings.hourly_rate
 HOURS_PER_DAY = settings.hours_per_day
 CURRENCY = settings.currency
 CURRENCY_SYMBOL = settings.currency_symbol
+VAT_RATE = settings.vat_rate
 INVOICE_NUMBER_TEMPLATE = settings.invoice_number_template
 
 CLIENT_ID = settings.microsoft_client_id

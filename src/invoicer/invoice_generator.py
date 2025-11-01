@@ -436,7 +436,7 @@ def create_sample_invoice_data(
     hourly_rate = settings.hourly_rate
     total_hours = days_worked * hours_per_day
     subtotal = total_hours * hourly_rate
-    tax_rate = 0.0  # Set to 0.08 for 8% tax, etc.
+    tax_rate = settings.vat_rate  # Use configured VAT rate (default 21%)
     tax_amount = subtotal * tax_rate
     total_amount = subtotal + tax_amount
 

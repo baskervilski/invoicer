@@ -43,7 +43,7 @@ def test_create_client_interactive_success():
         patch("builtins.input", side_effect=user_inputs),
         patch("sys.stdout", captured_output),
     ):
-        result = create_client_interactive(mock_client_manager, "Test Title")
+        result = create_client_interactive(mock_client_manager)
 
     # Verify client was created
     assert result is not None
@@ -56,7 +56,7 @@ def test_create_client_interactive_success():
 
     # Check output contains success message
     output = captured_output.getvalue()
-    assert "Test Title" in output
+    assert "Create New Client" in output
     assert "created successfully" in output
 
 
@@ -226,7 +226,7 @@ def test_create_client_interactive_custom_title():
         patch("builtins.input", side_effect=user_inputs),
         patch("sys.stdout", captured_output),
     ):
-        create_client_interactive(mock_client_manager, "Custom Title Here")
+        create_client_interactive(mock_client_manager)
 
     output = captured_output.getvalue()
-    assert "Custom Title Here" in output
+    assert "Create New Client" in output

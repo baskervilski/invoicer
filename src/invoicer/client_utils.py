@@ -3,13 +3,13 @@ Shared client utilities for interactive client creation.
 """
 
 from typing import Optional
+
+from invoicer.utils import print_with_underline
 from .client_manager import ClientManager
 from .models import ClientModel
 
 
-def create_client_interactive(
-    client_manager: ClientManager, title: str = "Create New Client"
-) -> Optional[ClientModel]:
+def create_client_interactive(client_manager: ClientManager) -> Optional[ClientModel]:
     """
     Interactive client creation with input validation.
 
@@ -20,8 +20,8 @@ def create_client_interactive(
     Returns:
         Optional[ClientModel]: Created client model or None if cancelled/failed
     """
-    print(f"\n📝 {title}")
-    print("=" * len(title))
+    title = "Create New Client"
+    print_with_underline(title)
 
     try:
         # Required fields
