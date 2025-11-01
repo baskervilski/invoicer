@@ -9,7 +9,7 @@ and sends them via Microsoft email.
 from pathlib import Path
 import sys
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 import calendar
 
 from invoicer.models import ClientModel, InvoiceModel
@@ -19,6 +19,7 @@ from .invoice_generator import InvoiceGenerator, create_sample_invoice_data
 from .email_sender import EmailSender
 from .client_manager import ClientManager, create_sample_clients
 from .config import settings
+from typing import overload
 
 
 def get_last_day_of_month(month_year_str: str) -> datetime:
@@ -87,12 +88,22 @@ def main():
         sys.exit(1)
 
 
-def select_client() -> Optional[ClientModel]:
+@overload
+def select_client(require_selection: Literal[True]) -> ClientModel: ...
+
+@overload
+def select_client(require_selection: bool = False) -> Optional[ClientModel]: ...
+
+def select_client(require_selection: bool = False) -> Optional[ClientModel]:
     """
     Allow user to select from existing clients
 
+    Args:
+        require_selection: If True, forces user to select a client (no cancellation)
+
     Returns:
-        Optional[ClientModel]: Client data or None if cancelled
+        ClientModel: Client data when require_selection is True
+        Optional[ClientModel]: Client data or None if cancelled when require_selection is False
     """
     client_manager = ClientManager()
 
@@ -117,9 +128,15 @@ def select_client() -> Optional[ClientModel]:
         choice = input("\nEnter your choice ([1]/2): ").strip() or "1"
         
         if choice == "1":
-            return _search_clients(client_manager)
+            result = _search_clients(client_manager)
+            if result or not require_selection:
+                return result
+            print("\nClient selection required. Please try again.")
         elif choice == "2":
-            return _browse_clients(client_manager, existing_clients)
+            result = _browse_clients(client_manager, existing_clients)
+            if result or not require_selection:
+                return result
+            print("\nClient selection required. Please try again.")
         else:
             print("Invalid choice. Please enter 1 or 2.")
 

@@ -8,6 +8,7 @@ This tool allows you to manage client data from the command line.
 import typer
 from typing import Optional
 
+from invoicer.main import select_client
 from invoicer.utils import print_with_underline
 from .client_manager import ClientManager
 from .client_utils import create_client_interactive
@@ -181,24 +182,13 @@ def delete(client_ids: str):
 
 # Project management commands
 @project_app.command("add")
-def add_project(project_name: str, client_id: Optional[str] = typer.Argument(None, help="Client ID (if not provided, you'll be prompted to select)")):
+def add_project(project_name: str):
     """Add a new project to an existing client"""
     client_manager = ClientManager()
     
     # If client_id not provided, let user select
-    if client_id is None:
-        from .main import select_client
-        client = select_client()
-        if not client:
-            print("❌ No client selected. Project creation cancelled.")
-            return
-        client_id = client.id
-    else:
-        # Check if provided client exists
-        client = client_manager.get_client(client_id)
-        if not client:
-            print(f"❌ Client with ID '{client_id}' not found.")
-            return
+    client = select_client(require_selection=True)
+    client_id = client.id
     
     # Add project
     project_id = client_manager.add_project(client_id, project_name)
@@ -211,16 +201,14 @@ def add_project(project_name: str, client_id: Optional[str] = typer.Argument(Non
 
 
 @project_app.command("list")
-def list_projects(client_id: str):
+def list_projects():
     """List all projects for a client"""
     client_manager = ClientManager()
     
-    # Check if client exists
-    client = client_manager.get_client(client_id)
-    if not client:
-        print(f"❌ Client with ID '{client_id}' not found.")
-        return
-    
+    # Let user select client
+    client = select_client(require_selection=True)
+    client_id = client.id
+
     projects = client_manager.list_projects(client_id)
     
     if not projects:

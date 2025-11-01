@@ -32,19 +32,62 @@ class ClientManager:
         # Create clients directory if it doesn't exist
         self.clients_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create index file if it doesn't exist
-        self.index_file = self.clients_dir / "clients_index.json"
-        if not self.index_file.exists():
-            self._create_initial_index()
+        # Build in-memory index from actual client files on startup
+        self.index = self._build_index_from_files()
 
-    def _create_initial_index(self):
-        """Create initial client index file"""
-        initial_data = {
+    def _build_index_from_files(self):
+        """Build the client index by scanning actual client directories and files"""
+        index_data = {
             "clients": {},
             "last_updated": datetime.now().isoformat(),
             "version": "1.0",
         }
-        self.index_file.write_text(json.dumps(initial_data, indent=2))
+        
+        # Scan all client directories
+        for client_dir in self.clients_dir.iterdir():
+            if not client_dir.is_dir() or client_dir.name.startswith('.'):
+                continue
+                
+            client_id = client_dir.name
+            client_file = client_dir / "client.json"
+            
+            # Skip if no client.json file exists
+            if not client_file.exists():
+                continue
+                
+            try:
+                # Load client data
+                client_data = json.loads(client_file.read_text())
+                
+                # Handle backwards compatibility - if old data has 'company' but no 'name'
+                client_name = client_data.get("name") or client_data.get("company", "Unknown Client")
+                
+                # Scan for projects in this client directory
+                projects = []
+                for project_file in client_dir.glob("project_*.json"):
+                    try:
+                        project_data = json.loads(project_file.read_text())
+                        projects.append(project_data.get("id", ""))
+                    except (json.JSONDecodeError, Exception):
+                        continue
+                
+                # Build index entry
+                index_data["clients"][client_id] = {
+                    "name": client_name,
+                    "email": client_data.get("email", ""),
+                    "client_code": client_data.get("client_code", ""),
+                    "created_date": client_data.get("created_date", datetime.now().isoformat()),
+                    "last_invoice_date": client_data.get("last_invoice_date"),
+                    "total_invoices": client_data.get("total_invoices", 0),
+                    "projects": projects,
+                }
+                
+            except (json.JSONDecodeError, KeyError, Exception):
+                # Skip invalid client files
+                continue
+        
+        # Return the built index
+        return index_data
 
     def _get_client_dir(self, client_id: str) -> Path:
         """Get the directory path for a client"""
@@ -58,18 +101,9 @@ class ClientManager:
         """Get the project file path for a project"""
         return self._get_client_dir(client_id) / f"project_{project_name}.json"
 
-    def _load_index(self) -> dict[str, dict]:
-        """Load the client index"""
-        try:
-            return json.loads(self.index_file.read_text())
-        except (FileNotFoundError, json.JSONDecodeError):
-            self._create_initial_index()
-            return json.loads(self.index_file.read_text())
-
-    def _save_index(self, index_data: Dict):
-        """Save the client index"""
-        index_data["last_updated"] = datetime.now().isoformat()
-        self.index_file.write_text(json.dumps(index_data, indent=2))
+    def _update_index(self):
+        """Update the in-memory client index"""
+        self.index = self._build_index_from_files()
 
     def _generate_client_id(self, client_name: str) -> str:
         """Generate a unique client ID from the client name"""
@@ -80,11 +114,10 @@ class ClientManager:
         client_id = re.sub(r"_+", "_", client_id).strip("_")
 
         # Check if ID already exists, add number if needed
-        index = self._load_index()
         original_id = client_id
         counter = 1
 
-        while client_id in index["clients"]:
+        while client_id in self.index["clients"]:
             client_id = f"{original_id}_{counter}"
             counter += 1
 
@@ -121,21 +154,11 @@ class ClientManager:
         client_file.write_text(client_model.model_dump_json(indent=2))
 
         # Update index using model data
-        index = self._load_index()
-        index["clients"][client_id] = {
-            "name": client_model.name,
-            "email": client_model.email,
-            "client_code": client_model.client_code,
-            "created_date": client_model.created_date.isoformat(),
-            "last_invoice_date": None,
-            "total_invoices": 0,
-            "projects": [],
-        }
-        self._save_index(index)
+        self._update_index()
 
         return client_id
 
-    def get_client(self, client_id: str) -> Optional[ClientModel]:
+    def get_client(self, client_id: str, raise_if_not_found: bool = False) -> Optional[ClientModel]:
         """Get client data by ID
 
         Args:
@@ -147,6 +170,8 @@ class ClientManager:
         client_file = self._get_client_file(client_id)
 
         if not client_file.exists():
+            if raise_if_not_found:
+                raise ValueError(f"Client with ID '{client_id}' not found.")
             return None
 
         try:
@@ -177,10 +202,9 @@ class ClientManager:
         Returns:
             List of client summary models
         """
-        index = self._load_index()
         clients = []
 
-        for client_id, client_summary in index["clients"].items():
+        for client_id, client_summary in self.index["clients"].items():
             try:
                 # Handle backwards compatibility - if old data has 'company' but no 'name', use company as name
                 client_name = client_summary.get("name") or client_summary.get(
@@ -243,19 +267,7 @@ class ClientManager:
 
         # Update index if necessary
         if any(key in ["name", "email", "client_code", "projects"] for key in updates.keys()):
-            index = self._load_index()
-            if client_id in index["clients"]:
-                if "name" in updates:
-                    index["clients"][client_id]["name"] = updated_model.name
-                if "email" in updates:
-                    index["clients"][client_id]["email"] = updated_model.email
-                if "client_code" in updates:
-                    index["clients"][client_id]["client_code"] = (
-                        updated_model.client_code
-                    )
-                if "projects" in updates:
-                    index["clients"][client_id]["projects"] = updated_model.projects
-                self._save_index(index)
+            self._update_index()
 
         return True
 
@@ -296,15 +308,7 @@ class ClientManager:
         )
 
         # Update index
-        index = self._load_index()
-        if client_id in index["clients"]:
-            index["clients"][client_id]["last_invoice_date"] = (
-                updated_model.last_invoice_date.isoformat()
-                if updated_model.last_invoice_date
-                else None
-            )
-            index["clients"][client_id]["total_invoices"] = updated_model.total_invoices
-            self._save_index(index)
+        self._update_index()
 
     def delete_client(self, client_id: str) -> bool:
         """Delete a client and all associated projects
@@ -324,10 +328,7 @@ class ClientManager:
         shutil.rmtree(client_dir)
 
         # Remove from index
-        index = self._load_index()
-        if client_id in index["clients"]:
-            del index["clients"][client_id]
-            self._save_index(index)
+        self._update_index()
 
         return True
 
@@ -436,7 +437,7 @@ class ClientManager:
     def _find_project_by_id(self, project_id: str) -> Optional[ProjectModel]:
         """Find a project by ID by searching through all client directories"""
         for client_dir in self.clients_dir.iterdir():
-            if client_dir.is_dir() and client_dir.name != "clients_index.json":
+            if client_dir.is_dir() and not client_dir.name.startswith('.'):
                 for project_file in client_dir.glob("project_*.json"):
                     try:
                         data = json.loads(project_file.read_text())

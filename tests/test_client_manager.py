@@ -11,7 +11,8 @@ def test_client_manager_initialization(temp_dir):
     client_manager = ClientManager(clients_dir=temp_dir)
 
     assert client_manager.clients_dir.exists()
-    assert client_manager.index_file.exists()
+    assert hasattr(client_manager, 'index')
+    assert client_manager.index is not None
 
 
 def test_add_and_get_client(temp_dir):
