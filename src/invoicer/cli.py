@@ -15,6 +15,7 @@ from . import main as invoicer_main
 from . import demo as invoicer_demo
 from . import generate_samples
 from .client_cli import app as client_app
+from .config_cli import app as config_app
 
 app = typer.Typer(
     name="invoicer",
@@ -22,8 +23,9 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-# Add client management as a subcommand group
+# Add subcommand groups
 app.add_typer(client_app, name="client", help="Client management commands")
+app.add_typer(config_app, name="config", help="Configuration management commands")
 
 
 @app.command()
@@ -63,45 +65,7 @@ def samples():
         sys.exit(1)
 
 
-@app.command()
-def config():
-    """Show current configuration (non-sensitive information only)"""
-    print("📋 Current configuration:")
-    try:
-        from . import config as cfg
 
-        print(f"Company: {cfg.COMPANY_NAME}")
-        print(f"Email: {cfg.COMPANY_EMAIL}")
-        print(f"Hourly Rate: {cfg.CURRENCY_SYMBOL}{cfg.HOURLY_RATE}")
-        print(f"Hours/Day: {cfg.HOURS_PER_DAY}")
-        print(f"Currency: {cfg.CURRENCY}")
-        print(f"Invoice Template: {cfg.INVOICE_NUMBER_TEMPLATE}")
-        print(
-            f"Invoices Directory: {cfg.INVOICES_DIR} (organized as year/client_code/)"
-        )
-        print(f"Clients Directory: {cfg.CLIENTS_DIR}")
-
-        # Show Microsoft API configuration status without exposing credentials
-        has_client_id = bool(cfg.CLIENT_ID and cfg.CLIENT_ID != "your-client-id-here")
-        has_client_secret = bool(
-            cfg.CLIENT_SECRET and cfg.CLIENT_SECRET != "your-client-secret-here"
-        )
-        has_tenant_id = bool(cfg.TENANT_ID and cfg.TENANT_ID != "your-tenant-id-here")
-
-        print("Microsoft API Status:")
-        print(
-            f"  Client ID: {'✅ Configured' if has_client_id else '❌ Not configured'}"
-        )
-        print(
-            f"  Client Secret: {'✅ Configured' if has_client_secret else '❌ Not configured'}"
-        )
-        print(
-            f"  Tenant ID: {'✅ Configured' if has_tenant_id else '❌ Not configured'}"
-        )
-
-    except Exception as e:
-        print(f"⚠️  Could not load configuration: {e}")
-        print("Make sure you have a .env file with your settings.")
 
 
 @app.command()
