@@ -158,6 +158,13 @@ class InvoicerSettings(BaseSettings):
             description="Company phone number",
         ),
     ]
+    company_vat: Annotated[
+        str,
+        Field(
+            default="",
+            description="Company VAT number (e.g., BE 1009.356.858)",
+        ),
+    ]
 
 
     # Invoice Settings using field types
@@ -206,6 +213,7 @@ COMPANY_NAME = settings.company_name
 COMPANY_ADDRESS = settings.company_address
 COMPANY_EMAIL = settings.company_email
 COMPANY_PHONE = settings.company_phone
+COMPANY_VAT = settings.company_vat
 
 HOURLY_RATE = settings.hourly_rate
 HOURS_PER_DAY = settings.hours_per_day

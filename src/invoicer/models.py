@@ -324,6 +324,7 @@ class InvoiceClientInfoModel(BaseModel):
     client_code: ClientCodeField
     email: ClientEmailField
     address: str
+    vat_number: VatNumberField = ""
 
 
 class InvoiceModel(BaseModel):

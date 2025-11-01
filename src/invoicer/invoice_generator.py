@@ -75,6 +75,31 @@ class InvoiceGenerator:
             )
         )
 
+    def _format_company_info(self) -> str:
+        """Format company information including address and VAT number."""
+        company_info = self.settings.company_address.replace("\n", "<br/>")
+        
+        # Add VAT number if provided
+        if self.settings.company_vat and self.settings.company_vat.strip():
+            company_info += f"<br/>VAT: {self.settings.company_vat}"
+        
+        return company_info
+
+    def _format_client_info(self, client_info) -> str:
+        """Format client information including address, email, and VAT number."""
+        client_address = client_info.address
+        formatted_info = (
+            f"{client_info.name}<br/>"
+            f"{client_address.replace(chr(10), '<br/>')}<br/>"
+            f"Email: {client_info.email}"
+        )
+        
+        # Add VAT number if provided
+        if hasattr(client_info, 'vat_number') and client_info.vat_number and client_info.vat_number.strip():
+            formatted_info += f"<br/>VAT: {client_info.vat_number}"
+        
+        return formatted_info
+
     def create_invoice(self, invoice_data: InvoiceModel) -> Path:
         """
         Create a PDF invoice and return the file path
@@ -145,7 +170,7 @@ class InvoiceGenerator:
             ],
             [
                 Paragraph(
-                    self.settings.company_address.replace("\n", "<br/>"),
+                    self._format_company_info(),
                     self.styles["Address"],
                 ),
                 Paragraph(
@@ -187,9 +212,7 @@ class InvoiceGenerator:
             [Paragraph("<b>Bill To:</b>", self.styles["Normal"]), ""],
             [
                 Paragraph(
-                    f"{client_info.name}<br/>"
-                    f"{client_address.replace(chr(10), '<br/>')}<br/>"
-                    f"Email: {client_info.email}",
+                    self._format_client_info(client_info),
                     self.styles["Address"],
                 ),
                 "",
@@ -453,6 +476,7 @@ def create_invoice_data(
         client_code=client.client_code,
         address=client.address,
         client_id=client.id,
+        vat_number=client.vat_number,
     )
 
     # Create line item

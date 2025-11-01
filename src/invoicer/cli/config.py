@@ -75,6 +75,8 @@ def show_config():
     print(f"  Company Name: {settings.company_name}")
     print(f"  Company Email: {settings.company_email}")
     print(f"  Company Phone: {settings.company_phone}")
+    if settings.company_vat:
+        print(f"  Company VAT: {settings.company_vat}")
     print(f"  Company Address:")
     for line in settings.company_address.split('\n'):
         print(f"    {line}")

@@ -121,6 +121,7 @@ COMPANY_NAME=Your Company Name
 COMPANY_ADDRESS="Your Address\nCity, State ZIP\nCountry"
 COMPANY_EMAIL=your.email@example.com
 COMPANY_PHONE=+1 (555) 123-4567
+COMPANY_VAT=
 
 # Invoice Settings
 HOURLY_RATE=75.0
