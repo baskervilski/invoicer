@@ -7,7 +7,6 @@ import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime
-from unittest.mock import patch
 
 from invoicer.config import InvoicerSettings
 from invoicer.invoice_generator import InvoiceGenerator
@@ -114,12 +113,14 @@ def existing_client():
 def sample_invoice():
     """Sample invoice for testing."""
     client_info = InvoiceClientInfoModel(
-        name="Test Client", email="client@test.com", client_code="TST", client_id="test", address="123 Test St\nTest City, TS 12345"
+        name="Test Client",
+        email="client@test.com",
+        client_code="TST",
+        client_id="test",
+        address="123 Test St\nTest City, TS 12345",
     )
 
-    line_item = InvoiceItemModel(
-        description="Consulting services", quantity=10.0, rate=800.0, amount=8000.0
-    )
+    line_item = InvoiceItemModel(description="Consulting services", quantity=10.0, rate=800.0, amount=8000.0)
 
     return InvoiceModel(
         invoice_number="INV-001",

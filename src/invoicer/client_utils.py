@@ -69,10 +69,10 @@ def create_client_interactive(client_manager: ClientManager) -> Optional[ClientM
 
         # Save client
         client_id = client_manager.add_client(client_data)
-        
+
         # Add initial project
-        project_id = client_manager.add_project(client_id, project_name)
-        
+        client_manager.add_project(client_id, project_name)
+
         full_client_data = client_manager.get_client(client_id)
 
         print(f"\n✅ Client '{name}' created successfully!")

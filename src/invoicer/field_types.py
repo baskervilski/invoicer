@@ -11,10 +11,7 @@ usage locations, this module now contains only truly reusable field types
 and helper functions.
 """
 
-from typing import Annotated
-from uuid import uuid4
 
-from pydantic import EmailStr, Field
 
 
 # ============================================================================
@@ -42,6 +39,3 @@ def validate_non_empty_after_strip(value: str) -> str:
 # ============================================================================
 # Reusable Field Types
 # ============================================================================
-
-
-

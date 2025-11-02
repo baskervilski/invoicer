@@ -42,26 +42,26 @@ class ClientManager:
             "last_updated": datetime.now().isoformat(),
             "version": "1.0",
         }
-        
+
         # Scan all client directories
         for client_dir in self.clients_dir.iterdir():
-            if not client_dir.is_dir() or client_dir.name.startswith('.'):
+            if not client_dir.is_dir() or client_dir.name.startswith("."):
                 continue
-                
+
             client_id = client_dir.name
             client_file = client_dir / "client.json"
-            
+
             # Skip if no client.json file exists
             if not client_file.exists():
                 continue
-                
+
             try:
                 # Load client data
                 client_data = json.loads(client_file.read_text())
-                
+
                 # Handle backwards compatibility - if old data has 'company' but no 'name'
                 client_name = client_data.get("name") or client_data.get("company", "Unknown Client")
-                
+
                 # Build index entry (projects removed from client.json)
                 index_data["clients"][client_id] = {
                     "name": client_name,
@@ -72,11 +72,11 @@ class ClientManager:
                     "last_invoice_date": client_data.get("last_invoice_date"),
                     "total_invoices": client_data.get("total_invoices", 0),
                 }
-                
+
             except (json.JSONDecodeError, KeyError, Exception):
                 # Skip invalid client files
                 continue
-        
+
         # Return the built index
         return index_data
 
@@ -142,7 +142,7 @@ class ClientManager:
         # Create client directory and save client file
         client_dir = self._get_client_dir(client_id)
         client_dir.mkdir(exist_ok=True)
-        
+
         client_file = self._get_client_file(client_id)
         client_file.write_text(client_model.model_dump_json(indent=2))
 
@@ -200,9 +200,7 @@ class ClientManager:
         for client_id, client_summary in self.index["clients"].items():
             try:
                 # Handle backwards compatibility - if old data has 'company' but no 'name', use company as name
-                client_name = client_summary.get("name") or client_summary.get(
-                    "company", "Unknown Client"
-                )
+                client_name = client_summary.get("name") or client_summary.get("company", "Unknown Client")
 
                 client_model = ClientSummaryModel(
                     id=client_id,
@@ -211,9 +209,7 @@ class ClientManager:
                     client_code=client_summary["client_code"],
                     vat_number=client_summary.get("vat_number", ""),
                     created_date=datetime.fromisoformat(client_summary["created_date"]),
-                    last_invoice_date=datetime.fromisoformat(
-                        client_summary["last_invoice_date"]
-                    )
+                    last_invoice_date=datetime.fromisoformat(client_summary["last_invoice_date"])
                     if client_summary.get("last_invoice_date")
                     else None,
                     total_invoices=client_summary.get("total_invoices", 0),
@@ -254,9 +250,7 @@ class ClientManager:
 
         # Save updated client file
         client_file = self._get_client_file(client_id)
-        client_file.write_text(
-            json.dumps(updated_model.model_dump(mode="json"), indent=2)
-        )
+        client_file.write_text(json.dumps(updated_model.model_dump(mode="json"), indent=2))
 
         # Update index if necessary
         if any(key in ["name", "email", "client_code", "vat_number"] for key in updates.keys()):
@@ -296,9 +290,7 @@ class ClientManager:
 
         # Save updated client data
         client_file = self._get_client_file(client_id)
-        client_file.write_text(
-            json.dumps(updated_model.model_dump(mode="json"), indent=2)
-        )
+        client_file.write_text(json.dumps(updated_model.model_dump(mode="json"), indent=2))
 
         # Update index
         self._update_index()
@@ -318,6 +310,7 @@ class ClientManager:
 
         # Remove entire client directory and all contents
         import shutil
+
         shutil.rmtree(client_dir)
 
         # Remove from index
@@ -335,10 +328,7 @@ class ClientManager:
         return [
             client
             for client in all_clients
-            if (
-                query_lower in client.name.lower()
-                or query_lower in client.email.lower()
-            )
+            if (query_lower in client.name.lower() or query_lower in client.email.lower())
         ]
 
     def _generate_project_id(self, client_id: str, project_name: str) -> str:
@@ -391,7 +381,7 @@ class ClientManager:
 
         # Save project file in client directory
         # Extract just the project name from the project_id (remove client_id prefix)
-        project_name = project_id[len(client_id) + 1:]  # +1 for the underscore
+        project_name = project_id[len(client_id) + 1 :]  # +1 for the underscore
         project_file = self._get_project_file(client_id, project_name)
         project_file.write_text(project_model.model_dump_json(indent=2))
 
@@ -408,10 +398,10 @@ class ClientManager:
             ProjectModel or None: Project model if found, None otherwise
         """
         # Extract client_id and project_name from project_id
-        parts = project_id.split('_', 1)
+        parts = project_id.split("_", 1)
         if len(parts) != 2:
             return None
-            
+
         client_id, project_name = parts
         project_file = self._get_project_file(client_id, project_name)
 
@@ -428,7 +418,7 @@ class ClientManager:
     def _find_project_by_id(self, project_id: str) -> Optional[ProjectModel]:
         """Find a project by ID by searching through all client directories"""
         for client_dir in self.clients_dir.iterdir():
-            if client_dir.is_dir() and not client_dir.name.startswith('.'):
+            if client_dir.is_dir() and not client_dir.name.startswith("."):
                 for project_file in client_dir.glob("project_*.json"):
                     try:
                         data = json.loads(project_file.read_text())
@@ -479,7 +469,7 @@ class ClientManager:
             return False
 
         # Extract client_id and project_name from project_id
-        parts = project_id.split('_', 1)
+        parts = project_id.split("_", 1)
         if len(parts) == 2:
             client_id, project_name = parts
             project_file = self._get_project_file(client_id, project_name)
@@ -494,7 +484,8 @@ class ClientManager:
                         if data.get("id") == project_id:
                             pf.unlink()
                             break
-                    except:
+                    except (json.JSONDecodeError, Exception) as e:
+                        print(f"Error reading {pf}: {e}")
                         continue
 
         # Projects are no longer tracked in client.json, just delete the file

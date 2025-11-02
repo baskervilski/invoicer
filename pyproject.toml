@@ -13,7 +13,6 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic[email]>=2.0.0",
     "pydantic-settings>=2.0.0",
-    "pytest[dev]>=8.4.2",
 ]
 
 [project.scripts]
@@ -21,7 +20,8 @@ invoicer = "invoicer.cli:app"
 
 [project.optional-dependencies]
 dev = [
-    "ruff"
+    "pytest>=8.4.2",
+    "ruff",
 ]
 
 [tool.uv]
@@ -33,3 +33,9 @@ environments = ["sys_platform == 'linux'"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-safe-fixes = ["E712"]

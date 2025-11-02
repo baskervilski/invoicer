@@ -15,7 +15,11 @@ import calendar
 from invoicer.models import ClientModel, InvoiceModel, ProjectModel
 from invoicer.utils import print_with_underline
 
-from .invoice_generator import InvoiceGenerator, create_invoice_data, generate_invoice_number
+from .invoice_generator import (
+    InvoiceGenerator,
+    create_invoice_data,
+    generate_invoice_number,
+)
 from .email_sender import EmailSender
 from .client_manager import ClientManager, create_sample_clients
 from .config import settings
@@ -51,12 +55,12 @@ def get_last_day_of_month(month_year_str: str) -> datetime:
 def check_invoice_exists(client_code: str, invoice_number: str, invoice_date: datetime) -> bool:
     """
     Check if an invoice with the given number already exists for a client.
-    
+
     Args:
         client_code: The client code (e.g., "AXE", "TSS")
         invoice_number: The invoice number to check
         invoice_date: The invoice date to determine the year directory
-        
+
     Returns:
         bool: True if invoice exists, False otherwise
     """
@@ -65,19 +69,19 @@ def check_invoice_exists(client_code: str, invoice_number: str, invoice_date: da
     year_dir = Path(settings.invoices_dir) / str(year)
     client_dir = year_dir / client_code
     invoice_file = client_dir / f"Invoice_{invoice_number}.pdf"
-    
+
     return invoice_file.exists()
 
 
 def get_alternative_invoice_number(client_code: str, base_invoice_number: str, invoice_date: datetime) -> str:
     """
     Generate an alternative invoice number if the original already exists.
-    
+
     Args:
         client_code: The client code
         base_invoice_number: The original invoice number that conflicts
         invoice_date: The invoice date
-        
+
     Returns:
         str: An alternative invoice number that doesn't conflict
     """
@@ -88,7 +92,7 @@ def get_alternative_invoice_number(client_code: str, base_invoice_number: str, i
         if not check_invoice_exists(client_code, alternative_number, invoice_date):
             return alternative_number
         counter += 1
-        
+
         # Safety check to prevent infinite loop
         if counter > 999:
             # Fallback to timestamp-based suffix
@@ -139,8 +143,10 @@ def main():
 @overload
 def select_client(require_selection: Literal[True]) -> ClientModel: ...
 
+
 @overload
 def select_client(require_selection: bool = False) -> Optional[ClientModel]: ...
+
 
 def select_client(require_selection: bool = False) -> Optional[ClientModel]:
     """
@@ -174,7 +180,7 @@ def select_client(require_selection: bool = False) -> Optional[ClientModel]:
 
     while True:
         choice = input("\nEnter your choice ([1]/2): ").strip() or "1"
-        
+
         if choice == "1":
             result = _browse_clients(client_manager, existing_clients)
             if result or not require_selection:
@@ -207,9 +213,7 @@ def _browse_clients(client_manager: ClientManager, clients: list) -> Optional[Cl
 
     while True:
         try:
-            choice = input(
-                f"Select client (1-{len(clients)}) or 'b' to go back: "
-            ).strip().lower()
+            choice = input(f"Select client (1-{len(clients)}) or 'b' to go back: ").strip().lower()
 
             if choice == "b":
                 return select_client()
@@ -260,19 +264,19 @@ def select_project(client_id: str) -> Optional[ProjectModel]:
         Optional[ProjectModel]: Project data or None if cancelled
     """
     client_manager = ClientManager()
-    
+
     # Get all projects for this client
     existing_projects = client_manager.list_projects(client_id)
-    
+
     if not existing_projects:
         print("❌ No existing projects found for this client!")
         print("\n💡 To create projects, use:")
         print("   • Command line: invoicer client add-project <client_id> <project_name>")
         print("\nPlease create at least one project before generating invoices.")
         return None
-    
+
     print_with_underline(f"\n📝 Project Selection ({len(existing_projects)} found):")
-    
+
     # Display numbered project list
     for i, project in enumerate(existing_projects, 1):
         created_date_str = project.created_date.strftime("%Y-%m-%d")
@@ -280,16 +284,14 @@ def select_project(client_id: str) -> Optional[ProjectModel]:
         print(f"     Created: {created_date_str}")
         print(f"     ID: {project.id}")
         print()
-    
+
     while True:
         try:
-            choice = input(
-                f"Select project (1-{len(existing_projects)}) or 'c' to cancel: "
-            ).strip().lower()
-            
+            choice = input(f"Select project (1-{len(existing_projects)}) or 'c' to cancel: ").strip().lower()
+
             if choice == "c":
                 return None
-            
+
             project_index = int(choice) - 1
             if 0 <= project_index < len(existing_projects):
                 selected_project = existing_projects[project_index]
@@ -297,7 +299,7 @@ def select_project(client_id: str) -> Optional[ProjectModel]:
                 return selected_project
             else:
                 print("Invalid selection. Please try again.")
-                
+
         except ValueError:
             print("Please enter a valid number or 'c' to cancel.")
 
@@ -339,9 +341,7 @@ def get_invoice_details() -> Optional[InvoiceModel]:
             month_year = current_month
 
         # Use project name as default description instead of generic description
-        project_description = input(
-            f"Project description (default: {selected_project.name}): "
-        ).strip()
+        project_description = input(f"Project description (default: {selected_project.name}): ").strip()
         if not project_description:
             project_description = selected_project.name
 
@@ -350,9 +350,7 @@ def get_invoice_details() -> Optional[InvoiceModel]:
         current_date = datetime.now()
         last_day_of_month = get_last_day_of_month(month_year)
 
-        print(
-            f"1. Last day of {month_year} ({last_day_of_month.strftime('%Y-%m-%d')}) [default]"
-        )
+        print(f"1. Last day of {month_year} ({last_day_of_month.strftime('%Y-%m-%d')}) [default]")
         print(f"2. Today ({current_date.strftime('%Y-%m-%d')})")
 
         while True:
@@ -383,36 +381,30 @@ def get_invoice_details() -> Optional[InvoiceModel]:
         print(f"   Total hours: {total_hours:,.1f}")
         print(f"   Subtotal: {settings.currency_symbol}{subtotal:,.2f}")
         if settings.vat_rate > 0:
-            print(
-                f"   VAT ({settings.vat_rate * 100:.1f}%): {settings.currency_symbol}{vat_amount:,.2f}"
-            )
+            print(f"   VAT ({settings.vat_rate * 100:.1f}%): {settings.currency_symbol}{vat_amount:,.2f}")
         print(f"   Total amount: {settings.currency_symbol}{total_with_vat:,.2f}")
 
         # Check for existing invoices before proceeding
         print("\n🔍 Checking for existing invoices...")
-        
+
         # Generate the invoice number that would be used
         proposed_invoice_number = generate_invoice_number(
-            settings.invoice_number_template, 
-            client.client_code, 
-            invoice_date
+            settings.invoice_number_template, client.client_code, invoice_date
         )
-        
+
         # Check if an invoice with this number already exists
         if check_invoice_exists(client.client_code, proposed_invoice_number, invoice_date):
             print(f"⚠️  Invoice {proposed_invoice_number} already exists for client {client.client_code}!")
             print("\nOptions:")
             print("1. Generate alternative invoice number")
             print("2. Cancel and review existing invoice")
-            
+
             while True:
                 choice = input("\nChoose an option ([1]/2): ").strip() or "1"
                 if choice == "1":
                     # Generate alternative invoice number
                     alternative_number = get_alternative_invoice_number(
-                        client.client_code, 
-                        proposed_invoice_number, 
-                        invoice_date
+                        client.client_code, proposed_invoice_number, invoice_date
                     )
                     print(f"✅ Alternative invoice number: {alternative_number}")
                     proposed_invoice_number = alternative_number
@@ -426,9 +418,7 @@ def get_invoice_details() -> Optional[InvoiceModel]:
             print(f"✅ Invoice number {proposed_invoice_number} is available")
 
         # Confirm
-        confirm = (
-            input("\nProceed with invoice creation? ([y]/n): ").lower().strip() or "y"
-        )
+        confirm = input("\nProceed with invoice creation? ([y]/n): ").lower().strip() or "y"
         if confirm not in ["y", "yes"]:
             return None
 
@@ -440,7 +430,7 @@ def get_invoice_details() -> Optional[InvoiceModel]:
             month_year=month_year,
             invoice_date=invoice_date,
         )
-        
+
         # Override the invoice number with our checked/alternative number
         invoice_data.invoice_number = proposed_invoice_number
 

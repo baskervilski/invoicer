@@ -59,7 +59,12 @@ def test_pdf_generation_with_tax(test_generator: InvoiceGenerator, sample_client
     assert pdf_path.suffix == ".pdf"
 
 
-def test_pdf_generation_different_clients(test_generator: InvoiceGenerator, sample_client: ClientModel, sample_client_2: ClientModel, sample_client_1: ClientModel):
+def test_pdf_generation_different_clients(
+    test_generator: InvoiceGenerator,
+    sample_client: ClientModel,
+    sample_client_2: ClientModel,
+    sample_client_1: ClientModel,
+):
     """Test PDF generation for different client codes."""
     clients = [sample_client, sample_client_2, sample_client_1]
 

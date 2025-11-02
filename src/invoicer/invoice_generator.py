@@ -78,26 +78,24 @@ class InvoiceGenerator:
     def _format_company_info(self) -> str:
         """Format company information including address and VAT number."""
         company_info = self.settings.company_address.replace("\n", "<br/>")
-        
+
         # Add VAT number if provided
         if self.settings.company_vat and self.settings.company_vat.strip():
             company_info += f"<br/>VAT: {self.settings.company_vat}"
-        
+
         return company_info
 
     def _format_client_info(self, client_info) -> str:
         """Format client information including address, email, and VAT number."""
         client_address = client_info.address
         formatted_info = (
-            f"{client_info.name}<br/>"
-            f"{client_address.replace(chr(10), '<br/>')}<br/>"
-            f"Email: {client_info.email}"
+            f"{client_info.name}<br/>{client_address.replace(chr(10), '<br/>')}<br/>Email: {client_info.email}"
         )
-        
+
         # Add VAT number if provided
-        if hasattr(client_info, 'vat_number') and client_info.vat_number and client_info.vat_number.strip():
+        if hasattr(client_info, "vat_number") and client_info.vat_number and client_info.vat_number.strip():
             formatted_info += f"<br/>VAT: {client_info.vat_number}"
-        
+
         return formatted_info
 
     def create_invoice(self, invoice_data: InvoiceModel) -> Path:
@@ -194,9 +192,7 @@ class InvoiceGenerator:
         )
 
         elements.append(header_table)
-        elements.append(
-            HRFlowable(width="100%", thickness=2, color=colors.HexColor("#2E86AB"))
-        )
+        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#2E86AB")))
 
         return elements
 
@@ -206,7 +202,6 @@ class InvoiceGenerator:
 
         # Bill To section
         client_info = invoice_data.client_info
-        client_address = client_info.address
 
         details_data = [
             [Paragraph("<b>Bill To:</b>", self.styles["Normal"]), ""],
@@ -246,13 +241,10 @@ class InvoiceGenerator:
 
         # Project description
         project_description = (
-            invoice_data.project_description
-            or f"Consulting services for {invoice_data.period or 'this month'}"
+            invoice_data.project_description or f"Consulting services for {invoice_data.period or 'this month'}"
         )
         # Table headers
-        line_items_data = [
-            ["Description", "Days", "Hours/Day", "Rate/Hour", "Total Hours", "Amount"]
-        ]
+        line_items_data = [["Description", "Days", "Hours/Day", "Rate/Hour", "Total Hours", "Amount"]]
 
         # Line item
         line_items_data.append(
@@ -322,9 +314,7 @@ class InvoiceGenerator:
         total_amount = invoice_data.total_amount
 
         # Build totals table
-        totals_data = [
-            ["", "Subtotal:", f"{self.settings.currency_symbol}{subtotal:,.2f}"]
-        ]
+        totals_data = [["", "Subtotal:", f"{self.settings.currency_symbol}{subtotal:,.2f}"]]
 
         if tax_rate > 0:
             totals_data.append(
@@ -384,9 +374,7 @@ class InvoiceGenerator:
         return elements
 
 
-def generate_invoice_number(
-    invoice_number_template, client_code: str, invoice_date: datetime | None = None
-) -> str:
+def generate_invoice_number(invoice_number_template, client_code: str, invoice_date: datetime | None = None) -> str:
     """
     Generate invoice number using the configured template
 
@@ -454,9 +442,7 @@ def create_invoice_data(
         month_year = datetime.now().strftime("%B %Y")
 
     # Generate invoice number using the client code
-    invoice_number = generate_invoice_number(
-        settings.invoice_number_template, client.client_code
-    )
+    invoice_number = generate_invoice_number(settings.invoice_number_template, client.client_code)
 
     assert isinstance(invoice_number, str), f"Expected str, got {type(invoice_number)}"
 

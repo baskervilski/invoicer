@@ -9,16 +9,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .validators import validate_template, validate_currency_code
 
+
 # Helper functions
 def strip_whitespace(value: str) -> str:
     """Strip leading and trailing whitespace."""
     return value.strip()
+
 
 def validate_non_empty_after_strip(value: str) -> str:
     """Validate that string is not empty after stripping whitespace."""
     if not value:
         raise ValueError("Field cannot be empty")
     return value
+
 
 # ============================================================================
 # Single-use field types for config.py
@@ -88,7 +91,9 @@ CurrencySymbolField = Annotated[
 
 InvoiceTemplateField = Annotated[
     str,
-    AfterValidator(lambda v: v if validate_template(v) else (_ for _ in ()).throw(ValueError("Invalid template format"))),
+    AfterValidator(
+        lambda v: v if validate_template(v) else (_ for _ in ()).throw(ValueError("Invalid template format"))
+    ),
     Field(
         default="INV-{year}{month:02d}-{client_code}",
         description="Invoice number template with variables: {year}, {month}, {day}, {client_code}, {invoice_number}",
@@ -143,9 +148,7 @@ ScopesListField = Annotated[
 class InvoicerSettings(BaseSettings):
     """Application settings loaded from environment variables and .env file."""
 
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
 
     # Company/Personal Information using field types
     company_name: CompanyNameField
@@ -165,7 +168,6 @@ class InvoicerSettings(BaseSettings):
             description="Company VAT number (e.g., BE 1009.356.858)",
         ),
     ]
-
 
     # Invoice Settings using field types
     hourly_rate: Annotated[

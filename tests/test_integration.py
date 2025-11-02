@@ -40,7 +40,13 @@ def test_full_client_to_invoice_workflow(temp_dir, test_generator: InvoiceGenera
     assert retrieved_client.name == sample_client.name
 
 
-def test_multiple_clients_multiple_invoices(temp_dir, test_generator: InvoiceGenerator, sample_client: ClientModel, sample_client_1: ClientModel, sample_client_2: ClientModel):
+def test_multiple_clients_multiple_invoices(
+    temp_dir,
+    test_generator: InvoiceGenerator,
+    sample_client: ClientModel,
+    sample_client_1: ClientModel,
+    sample_client_2: ClientModel,
+):
     """Test creating multiple clients and invoices."""
     client_manager = ClientManager(clients_dir=temp_dir)
 

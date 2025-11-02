@@ -41,36 +41,34 @@ def test_client_model_validation_failures():
     # Invalid email
     with pytest.raises(ValidationError):
         ClientModel(
-            id="test", 
-            name="Test", 
-            email="invalid-email", 
+            id="test",
+            name="Test",
+            email="invalid-email",
             client_code="TST",
             vat_number="TST123",
             address="123 Test St",
             phone="+1-555-0123",
-            created_date=datetime(2023, 1, 1)
+            created_date=datetime(2023, 1, 1),
         )
 
     # Empty name
     with pytest.raises(ValidationError):
         ClientModel(
-            id="test", 
-            name="", 
-            email="test@test.com", 
+            id="test",
+            name="",
+            email="test@test.com",
             client_code="TST",
             vat_number="TST123",
             address="123 Test St",
             phone="+1-555-0123",
-            created_date=datetime(2023, 1, 1)
+            created_date=datetime(2023, 1, 1),
         )
 
 
 def test_invoice_item_calculation_validation():
     """Test that InvoiceItemModel validates amount calculations."""
     # Valid item
-    item = InvoiceItemModel(
-        description="Service", quantity=5.0, rate=100.0, amount=500.0
-    )
+    item = InvoiceItemModel(description="Service", quantity=5.0, rate=100.0, amount=500.0)
     assert item.amount == 500.0
 
     # Invalid calculation
@@ -120,7 +118,7 @@ def test_invoice_model_creates_successfully():
         email="client@test.com",
         client_code="TST",
         client_id="test_client",
-        address="123 Test St\nTest City, TS 12345"
+        address="123 Test St\nTest City, TS 12345",
     )
 
     invoice = InvoiceModel(

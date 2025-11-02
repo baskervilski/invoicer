@@ -6,7 +6,6 @@ from unittest.mock import Mock, patch, call
 from io import StringIO
 
 from invoicer.cli.client import delete
-from invoicer.models import ClientModel
 
 
 def test_delete_single_client(temp_dir, sample_client):
@@ -65,9 +64,7 @@ def test_delete_multiple_clients(temp_dir, sample_client_1, sample_client_2):
     expected_delete_calls = [call(sample_client_1.id), call(sample_client_2.id)]
 
     mock_client_manager.get_client.assert_has_calls(expected_get_calls, any_order=True)
-    mock_client_manager.delete_client.assert_has_calls(
-        expected_delete_calls, any_order=True
-    )
+    mock_client_manager.delete_client.assert_has_calls(expected_delete_calls, any_order=True)
 
     # Check output
     output = captured_output.getvalue()

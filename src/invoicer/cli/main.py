@@ -13,7 +13,6 @@ import sys
 # Import subcommands
 from .. import main as invoicer_main
 from .. import demo as invoicer_demo
-from .. import generate_samples
 from .client import app as client_app
 from .config import app as config_app
 
@@ -51,17 +50,6 @@ def demo():
         invoicer_demo.demo_invoice_generation()
     except Exception as e:
         print(f"❌ Error running demo: {e}")
-        sys.exit(1)
-
-
-@app.command()
-def samples():
-    """Generate sample invoices for different scenarios"""
-    print("📄 Generating sample invoices for different scenarios...")
-    try:
-        generate_samples.generate_samples()
-    except Exception as e:
-        print(f"❌ Error generating samples: {e}")
         sys.exit(1)
 
 

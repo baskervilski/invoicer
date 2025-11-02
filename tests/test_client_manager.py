@@ -11,7 +11,7 @@ def test_client_manager_initialization(temp_dir):
     client_manager = ClientManager(clients_dir=temp_dir)
 
     assert client_manager.clients_dir.exists()
-    assert hasattr(client_manager, 'index')
+    assert hasattr(client_manager, "index")
     assert client_manager.index is not None
 
 
@@ -64,12 +64,8 @@ def test_search_clients(temp_dir):
     client_manager = ClientManager(clients_dir=temp_dir)
 
     # Add test clients
-    client_manager.add_client(
-        {"name": "Acme Corp", "email": "contact@acme.com", "client_code": "ACM"}
-    )
-    client_manager.add_client(
-        {"name": "Beta Inc", "email": "info@beta.com", "client_code": "BET"}
-    )
+    client_manager.add_client({"name": "Acme Corp", "email": "contact@acme.com", "client_code": "ACM"})
+    client_manager.add_client({"name": "Beta Inc", "email": "info@beta.com", "client_code": "BET"})
 
     # Search by name
     results = client_manager.search_clients("Acme")
@@ -92,9 +88,7 @@ def test_update_client(temp_dir):
     )
 
     # Update client
-    success = client_manager.update_client(
-        client_id, {"name": "Updated Name", "phone": "+1-555-0123"}
-    )
+    success = client_manager.update_client(client_id, {"name": "Updated Name", "phone": "+1-555-0123"})
 
     assert success is True
 
@@ -111,9 +105,7 @@ def test_delete_client(temp_dir):
     client_manager = ClientManager(clients_dir=temp_dir)
 
     # Add client
-    client_id = client_manager.add_client(
-        {"name": "To Delete", "email": "delete@example.com", "client_code": "DEL"}
-    )
+    client_id = client_manager.add_client({"name": "To Delete", "email": "delete@example.com", "client_code": "DEL"})
 
     # Verify client exists
     assert client_manager.get_client(client_id) is not None
@@ -132,11 +124,7 @@ def test_add_and_get_project(temp_dir):
     client_manager = ClientManager(clients_dir=temp_dir)
 
     # Add a client first
-    client_id = client_manager.add_client({
-        "name": "Test Client",
-        "email": "test@example.com",
-        "client_code": "TST"
-    })
+    client_id = client_manager.add_client({"name": "Test Client", "email": "test@example.com", "client_code": "TST"})
 
     # Add a project
     project_id = client_manager.add_project(client_id, "Test Project")
@@ -158,24 +146,20 @@ def test_list_projects(temp_dir):
     client_manager = ClientManager(clients_dir=temp_dir)
 
     # Add a client
-    client_id = client_manager.add_client({
-        "name": "Test Client",
-        "email": "test@example.com",
-        "client_code": "TST"
-    })
+    client_id = client_manager.add_client({"name": "Test Client", "email": "test@example.com", "client_code": "TST"})
 
     # Initially no projects
     projects = client_manager.list_projects(client_id)
     assert len(projects) == 0
 
     # Add some projects
-    project_id1 = client_manager.add_project(client_id, "Project Alpha")
-    project_id2 = client_manager.add_project(client_id, "Project Beta")
+    client_manager.add_project(client_id, "Project Alpha")
+    client_manager.add_project(client_id, "Project Beta")
 
     # Should have two projects
     projects = client_manager.list_projects(client_id)
     assert len(projects) == 2
-    
+
     # Projects should be sorted by creation date (newest first)
     project_names = [p.name for p in projects]
     assert "Project Alpha" in project_names
@@ -187,12 +171,8 @@ def test_delete_project(temp_dir):
     client_manager = ClientManager(clients_dir=temp_dir)
 
     # Add client and project
-    client_id = client_manager.add_client({
-        "name": "Test Client",
-        "email": "test@example.com",
-        "client_code": "TST"
-    })
-    
+    client_id = client_manager.add_client({"name": "Test Client", "email": "test@example.com", "client_code": "TST"})
+
     project_id = client_manager.add_project(client_id, "To Delete Project")
     assert project_id is not None  # Ensure project was created
 
@@ -225,11 +205,7 @@ def test_project_id_generation(temp_dir):
     client_manager = ClientManager(clients_dir=temp_dir)
 
     # Add a client
-    client_id = client_manager.add_client({
-        "name": "Test Client",
-        "email": "test@example.com",
-        "client_code": "TST"
-    })
+    client_id = client_manager.add_client({"name": "Test Client", "email": "test@example.com", "client_code": "TST"})
 
     # Add projects with same name - should get unique IDs
     project_id1 = client_manager.add_project(client_id, "Test Project")

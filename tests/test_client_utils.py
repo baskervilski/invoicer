@@ -153,6 +153,7 @@ def test_get_client_creation_data_success(client_creation_user_inputs):
     for key, value in client_creation_user_inputs.items():
         assert result[key] == value
 
+
 @pytest.fixture
 def client_creation_user_inputs() -> dict:
     """Fixture providing default user inputs for client creation tests."""
@@ -167,6 +168,7 @@ def client_creation_user_inputs() -> dict:
         "notes": "Test notes",
         "project_name": "Test Project",
     }
+
 
 def test_get_client_creation_data_with_defaults(client_creation_user_inputs):
     """Test data collection using default values."""

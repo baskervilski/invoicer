@@ -6,7 +6,6 @@ This tool allows you to manage client data from the command line.
 """
 
 import typer
-from typing import Optional
 
 from ..main import select_client
 from ..utils import print_with_underline
@@ -105,7 +104,7 @@ def show(client_id: str):
     print(f"Last Invoice: {client.last_invoice_date or 'Never'}")
     print(f"Total Invoices: {client.total_invoices:,}")
     print(f"Total Amount: ${client.total_amount:,.2f}")
-    
+
     # Show projects
     projects = client_manager.list_projects(client_id)
     if projects:
@@ -148,17 +147,13 @@ def delete(client_ids: str):
 
     # Show clients to be deleted
     if len(clients_to_delete) == 1:
-        print(
-            f"⚠️  Are you sure you want to delete client '{clients_to_delete[0].name}'?"
-        )
+        print(f"⚠️  Are you sure you want to delete client '{clients_to_delete[0].name}'?")
     else:
         print(f"⚠️  Are you sure you want to delete {len(clients_to_delete)} clients?")
         for client in clients_to_delete:
             print(f"   - {client.name} ({client.id})")
 
-    confirm = (
-        input("This action cannot be undone. Type 'yes' to confirm: ").strip().lower()
-    )
+    confirm = input("This action cannot be undone. Type 'yes' to confirm: ").strip().lower()
 
     if confirm == "yes":
         successful_deletions = 0
@@ -185,14 +180,14 @@ def delete(client_ids: str):
 def add_project(project_name: str):
     """Add a new project to an existing client"""
     client_manager = ClientManager()
-    
+
     # If client_id not provided, let user select
     client = select_client(require_selection=True)
     client_id = client.id
-    
+
     # Add project
     project_id = client_manager.add_project(client_id, project_name)
-    
+
     if project_id:
         print(f"✅ Project '{project_name}' added to client '{client.name}'!")
         print(f"Project ID: {project_id}")
@@ -204,19 +199,19 @@ def add_project(project_name: str):
 def list_projects():
     """List all projects for a client"""
     client_manager = ClientManager()
-    
+
     # Let user select client
     client = select_client(require_selection=True)
     client_id = client.id
 
     projects = client_manager.list_projects(client_id)
-    
+
     if not projects:
         print(f"📂 No projects found for client '{client.name}'.")
         return
-    
+
     print_with_underline(f"\n📂 Projects for '{client.name}' ({len(projects)} found):")
-    
+
     for project in projects:
         print(f"ID: {project.id}")
         print(f"Name: {project.name}")
@@ -229,15 +224,15 @@ def show_project(project_id: str):
     """Show detailed project information"""
     client_manager = ClientManager()
     project = client_manager.get_project(project_id)
-    
+
     if not project:
         print(f"❌ Project with ID '{project_id}' not found.")
         return
-    
+
     # Get client info
     client = client_manager.get_client(project.client_id)
     client_name = client.name if client else "Unknown Client"
-    
+
     print_with_underline(f"\n📂 Project Details: {project.name}")
     print(f"ID: {project.id}")
     print(f"Name: {project.name}")
@@ -250,18 +245,18 @@ def delete_project(project_id: str):
     """Delete a project"""
     client_manager = ClientManager()
     project = client_manager.get_project(project_id)
-    
+
     if not project:
         print(f"❌ Project with ID '{project_id}' not found.")
         return
-    
+
     # Get client info for confirmation
     client = client_manager.get_client(project.client_id)
     client_name = client.name if client else "Unknown Client"
-    
+
     print(f"⚠️  Are you sure you want to delete project '{project.name}' from client '{client_name}'?")
     confirm = input("This action cannot be undone. Type 'yes' to confirm: ").strip().lower()
-    
+
     if confirm == "yes":
         if client_manager.delete_project(project_id):
             print(f"✅ Project '{project.name}' deleted successfully.")

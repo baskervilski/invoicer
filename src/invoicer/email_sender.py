@@ -53,9 +53,7 @@ class EmailSender:
             bool: True if authentication successful, False otherwise
         """
         # Get authorization URL
-        auth_url = self.app.get_authorization_request_url(
-            config.SCOPES, redirect_uri=config.REDIRECT_URI
-        )
+        auth_url = self.app.get_authorization_request_url(config.SCOPES, redirect_uri=config.REDIRECT_URI)
 
         print(f"Please visit this URL to authorize the application: {auth_url}")
         webbrowser.open(auth_url)
@@ -76,9 +74,7 @@ class EmailSender:
             self.access_token = result["access_token"]
             return True
         else:
-            print(
-                f"Failed to acquire token: {result.get('error_description', 'Unknown error')}"
-            )
+            print(f"Failed to acquire token: {result.get('error_description', 'Unknown error')}")
             return False
 
     def _wait_for_auth_code(self) -> Optional[str]:
@@ -108,9 +104,7 @@ class EmailSender:
                     self.send_response(400)
                     self.send_header("Content-type", "text/html")
                     self.end_headers()
-                    self.wfile.write(
-                        b"<html><body><h1>Authentication failed!</h1></body></html>"
-                    )
+                    self.wfile.write(b"<html><body><h1>Authentication failed!</h1></body></html>")
 
             def log_message(self, format, *args):
                 # Suppress log messages
